@@ -9,9 +9,9 @@ import { useClickOutside } from '@/composables/useClickOutside'
 import { releaseYear } from '@/utils/date'
 
 const props = defineProps<{
-  index:       number
-  modelValue:  TmdbPerson | TmdbTitle | null
-  searchMode:  SearchMode | null
+  index: number
+  modelValue: TmdbPerson | TmdbTitle | null
+  searchMode: SearchMode | null
   creditsCount?: number
 }>()
 
@@ -26,17 +26,19 @@ const apiKey = inject<Ref<string>>('apiKey')!
 const color = computed(() => PERSON_COLORS[props.index] ?? PERSON_COLORS[0])
 
 // ── Local state ───────────────────────────────────────────────────────────────
-const query     = ref('')
+const query = ref('')
 const container = ref<HTMLElement | null>(null)
 
 // ── Search dropdown ───────────────────────────────────────────────────────────
 const { dropdown, showDrop, search: runSearch } = useSearchDropdown(apiKey, () => props.searchMode)
 watch(query, runSearch)
-useClickOutside([container], () => { showDrop.value = false })
+useClickOutside([container], () => {
+  showDrop.value = false
+})
 
 // ── Placeholder copy based on mode ────────────────────────────────────────────
 const placeholder = computed(() => {
-  if (props.searchMode === 'title')  return `Title ${props.index + 1} — film or TV show…`
+  if (props.searchMode === 'title') return `Title ${props.index + 1} — film or TV show…`
   if (props.searchMode === 'person') return `Person ${props.index + 1} — actor, director, writer…`
   return `Search for a person or title…`
 })
@@ -44,7 +46,7 @@ const placeholder = computed(() => {
 // ── Handlers ─────────────────────────────────────────────────────────────────
 function select(item: TmdbPerson | TmdbTitle): void {
   emit('update:modelValue', item)
-  query.value    = ''
+  query.value = ''
   showDrop.value = false
 }
 
@@ -60,8 +62,12 @@ function hideOnError(e: Event): void {
 // ── Dropdown item helpers ─────────────────────────────────────────────────────
 function itemLabel(item: TmdbPerson | TmdbTitle): string {
   if (isPersonSlot(item)) {
-    const dept  = item.known_for_department ?? ''
-    const known = (item.known_for ?? []).map(k => k.title ?? k.name).filter(Boolean).slice(0, 2).join(', ')
+    const dept = item.known_for_department ?? ''
+    const known = (item.known_for ?? [])
+      .map((k) => k.title ?? k.name)
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(', ')
     return [dept, known].filter(Boolean).join(' · ')
   }
   const year = releaseYear(item.release_date)
@@ -75,36 +81,16 @@ function itemBadge(item: TmdbPerson | TmdbTitle): string | null {
   if (isPersonSlot(item)) return 'Person'
   return item.media_type === 'tv' ? 'TV' : 'Film'
 }
-
-// ── Card helpers ──────────────────────────────────────────────────────────────
-function knownForLabel(p: TmdbPerson): string {
-  const dept  = p.known_for_department ?? ''
-  const known = (p.known_for ?? []).map(k => k.title ?? k.name).filter(Boolean).slice(0, 2).join(', ')
-  return [dept, known].filter(Boolean).join(' · ')
-}
-
 </script>
 
 <template>
   <div ref="container" class="slot-search" :style="`--slot-color: ${color}`">
-
     <!-- ── Input + dropdown ── -->
     <template v-if="!modelValue">
       <div class="search-input-wrap">
-        <input
-          v-model="query"
-          type="text"
-          class="slot-input"
-          :placeholder="placeholder"
-          autocomplete="off"
-        >
+        <input v-model="query" type="text" class="slot-input" :placeholder="placeholder" autocomplete="off" />
         <div v-show="showDrop && dropdown.length" class="search-dropdown">
-          <div
-            v-for="item in dropdown"
-            :key="item.id"
-            class="dropdown-item"
-            @click="select(item)"
-          >
+          <div v-for="item in dropdown" :key="item.id" class="dropdown-item" @click="select(item)">
             <!-- Person photo or title poster -->
             <img
               class="dropdown-item-thumb"
@@ -112,7 +98,7 @@ function knownForLabel(p: TmdbPerson): string {
               :src="isPersonSlot(item) ? profileUrl(item.profile_path) : posterUrl(item.poster_path)"
               alt=""
               @error="hideOnError"
-            >
+            />
             <div class="dropdown-item-body">
               <div class="dropdown-item-name">{{ item.name }}</div>
               <div class="dropdown-item-sub">{{ itemLabel(item) }}</div>
@@ -130,16 +116,14 @@ function knownForLabel(p: TmdbPerson): string {
         :src="profileUrl(modelValue.profile_path)"
         :alt="modelValue.name"
         @error="hideOnError"
-      >
+      />
       <div class="card-info">
         <div class="card-name">{{ modelValue.name }}</div>
         <div class="card-sub">{{ modelValue.known_for_department || 'Various roles' }}</div>
         <div v-if="modelValue.known_for?.length" class="known-pills">
-          <span
-            v-for="k in modelValue.known_for.slice(0, 3)"
-            :key="k.id"
-            class="known-pill"
-          >{{ k.title ?? k.name }}</span>
+          <span v-for="k in modelValue.known_for.slice(0, 3)" :key="k.id" class="known-pill">{{
+            k.title ?? k.name
+          }}</span>
         </div>
         <div class="card-count">{{ creditsCount ? `${creditsCount} projects` : '—' }}</div>
       </div>
@@ -153,7 +137,7 @@ function knownForLabel(p: TmdbPerson): string {
         :src="posterUrl((modelValue as TmdbTitle).poster_path)"
         :alt="(modelValue as TmdbTitle).name"
         @error="hideOnError"
-      >
+      />
       <div class="card-info">
         <div class="card-name">{{ (modelValue as TmdbTitle).name }}</div>
         <div class="card-sub">
@@ -164,13 +148,16 @@ function knownForLabel(p: TmdbPerson): string {
       </div>
       <button class="card-clear" @click="clear">✕</button>
     </div>
-
   </div>
 </template>
 
 <style scoped>
-.slot-search { position: relative; }
-.search-input-wrap { position: relative; }
+.slot-search {
+  position: relative;
+}
+.search-input-wrap {
+  position: relative;
+}
 
 .slot-input {
   width: 100%;
@@ -181,7 +168,9 @@ function knownForLabel(p: TmdbPerson): string {
   color: var(--text);
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .slot-input:focus {
@@ -193,7 +182,8 @@ function knownForLabel(p: TmdbPerson): string {
 .search-dropdown {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--r);
@@ -213,7 +203,9 @@ function knownForLabel(p: TmdbPerson): string {
   transition: background 0.13s;
 }
 
-.dropdown-item:hover { background: var(--surface3); }
+.dropdown-item:hover {
+  background: var(--surface3);
+}
 
 .dropdown-item-thumb {
   border-radius: 4px;
@@ -222,12 +214,27 @@ function knownForLabel(p: TmdbPerson): string {
   flex-shrink: 0;
 }
 
-.thumb--person { width: 34px; height: 50px; }
-.thumb--title  { width: 34px; height: 50px; }
+.thumb--person {
+  width: 34px;
+  height: 50px;
+}
+.thumb--title {
+  width: 34px;
+  height: 50px;
+}
 
-.dropdown-item-body { flex: 1; min-width: 0; }
-.dropdown-item-name { font-weight: 600; font-size: 0.88rem; }
-.dropdown-item-sub  { font-size: 0.73rem; color: var(--text-2); }
+.dropdown-item-body {
+  flex: 1;
+  min-width: 0;
+}
+.dropdown-item-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.dropdown-item-sub {
+  font-size: 0.73rem;
+  color: var(--text-2);
+}
 
 .dropdown-item-badge {
   font-size: 0.65rem;
@@ -254,7 +261,8 @@ function knownForLabel(p: TmdbPerson): string {
 }
 
 .person-card-photo {
-  width: 48px; height: 70px;
+  width: 48px;
+  height: 70px;
   border-radius: 6px;
   object-fit: cover;
   background: var(--surface3);
@@ -262,17 +270,32 @@ function knownForLabel(p: TmdbPerson): string {
 }
 
 .title-card-poster {
-  width: 42px; height: 62px;
+  width: 42px;
+  height: 62px;
   border-radius: 4px;
   object-fit: cover;
   background: var(--surface3);
   flex-shrink: 0;
 }
 
-.card-info  { flex: 1; min-width: 0; }
-.card-name  { font-weight: 700; font-size: 0.95rem; }
-.card-sub   { font-size: 0.78rem; color: var(--text-2); margin-bottom: 5px; }
-.card-count { font-size: 0.72rem; color: var(--text-3); margin-top: 4px; }
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+.card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.card-sub {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
+.card-count {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 4px;
+}
 
 .media-badge {
   font-size: 0.65rem;
@@ -303,7 +326,8 @@ function knownForLabel(p: TmdbPerson): string {
 
 .card-clear {
   position: absolute;
-  top: 8px; right: 8px;
+  top: 8px;
+  right: 8px;
   background: none;
   border: none;
   color: var(--text-3);
@@ -311,8 +335,13 @@ function knownForLabel(p: TmdbPerson): string {
   font-size: 0.9rem;
   padding: 2px 7px;
   border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
-.card-clear:hover { color: var(--text); background: var(--surface3); }
+.card-clear:hover {
+  color: var(--text);
+  background: var(--surface3);
+}
 </style>

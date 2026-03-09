@@ -3,53 +3,55 @@ import { computed, ref } from 'vue'
 import type { TmdbPerson, TmdbTitle, CastMember, Project, RegionMask, RoleCategory, SearchMode } from '@/types/tmdb'
 import { PERSON_COLORS, ALL_ROLE_CATS, EMPTY_ROLE_COUNTS } from '@/types/tmdb'
 import { VENN_LAYOUTS, slotLabelCenter, slotLabelBelow } from '@/utils/vennLayout'
-import { MAX_PERSONS, MIN_PERSONS } from '@/composables/useVennState'
+import { MIN_PERSONS } from '@/composables/useVennState'
 import { useClickOutside } from '@/composables/useClickOutside'
-import PersonCards        from '@/components/PersonCards.vue'
-import VennCanvas         from '@/components/VennCanvas.vue'
+import PersonCards from '@/components/PersonCards.vue'
+import VennCanvas from '@/components/VennCanvas.vue'
 import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue'
-import { IconGear }       from '@/components/icons'
+import { IconGear } from '@/components/icons'
 
 const props = defineProps<{
-  slots:             (TmdbPerson | TmdbTitle | null)[]
-  searchMode:        SearchMode | null
-  hasResults:        boolean
-  isLoading:         boolean
-  regionCounts:      Map<RegionMask, number>
-  enabledMask:       number
-  selectedMask:      RegionMask
+  slots: (TmdbPerson | TmdbTitle | null)[]
+  searchMode: SearchMode | null
+  hasResults: boolean
+  isLoading: boolean
+  regionCounts: Map<RegionMask, number>
+  enabledMask: number
+  selectedMask: RegionMask
   personRoleFilters: RoleCategory[][]
-  personRoleCounts:  Array<Record<RoleCategory, number>>
-  selfEnabled:        boolean
+  personRoleCounts: Array<Record<RoleCategory, number>>
+  selfEnabled: boolean
   defaultSelfEnabled: boolean
-  credits:           Project[][]
-  castLists:         CastMember[][]
+  credits: Project[][]
+  castLists: CastMember[][]
 }>()
 
 const emit = defineEmits<{
-  'update:slot':        [idx: number, val: TmdbPerson | TmdbTitle | null]
-  'clear-slot':         [idx: number]
+  'update:slot': [idx: number, val: TmdbPerson | TmdbTitle | null]
+  'clear-slot': [idx: number]
   'update-role-filter': [idx: number, cats: RoleCategory[]]
-  'select':             [mask: RegionMask]
-  'toggle-self':         []
+  select: [mask: RegionMask]
+  'toggle-self': []
   'toggle-default-self': []
-  'add-slot':            []
-  'remove-slot':         []
-  'run-compare':         []
-  'clear-search':        []
+  'add-slot': []
+  'remove-slot': []
+  'run-compare': []
+  'clear-search': []
 }>()
 
 // ── Config dropdown ───────────────────────────────────────────────────────────
-const configOpen     = ref(false)
-const configBtnRef   = ref<HTMLElement | null>(null)
+const configOpen = ref(false)
+const configBtnRef = ref<HTMLElement | null>(null)
 const configPanelRef = ref<HTMLElement | null>(null)
 
-useClickOutside([configBtnRef, configPanelRef], () => { configOpen.value = false })
+useClickOutside([configBtnRef, configPanelRef], () => {
+  configOpen.value = false
+})
 
 // ── Layout / geometry ─────────────────────────────────────────────────────────
 // Mirrors VennCanvas: filled slots, minimum 2.
-const displayCount = computed(() => Math.max(props.slots.filter(s => s !== null).length, 2))
-const stageLayout  = computed(() => VENN_LAYOUTS[displayCount.value] ?? VENN_LAYOUTS[2])
+const displayCount = computed(() => Math.max(props.slots.filter((s) => s !== null).length, 2))
+const stageLayout = computed(() => VENN_LAYOUTS[displayCount.value] ?? VENN_LAYOUTS[2])
 
 /** CSS for the role-filter dropdown: anchored just below the slot's name label. */
 function roleFilterStyle(i: number): Record<string, string> {
@@ -65,9 +67,7 @@ function labelOverlayStyle(i: number): Record<string, string> {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 /** Compare button is enabled once at least 2 slots are filled. */
-const canCompare = computed(() =>
-  props.slots.filter(s => s !== null).length >= MIN_PERSONS
-)
+const canCompare = computed(() => props.slots.filter((s) => s !== null).length >= MIN_PERSONS)
 
 const emptyRoleCounts = EMPTY_ROLE_COUNTS
 
@@ -84,7 +84,6 @@ function totalForSlot(i: number): number {
 
 <template>
   <div class="venn-wrap">
-
     <header>
       <div class="logo-row">
         <div class="logo">
@@ -94,7 +93,12 @@ function totalForSlot(i: number): number {
 
         <!-- ── Config button + dropdown ── -->
         <div class="config-wrap">
-          <button ref="configBtnRef" class="config-btn" :class="{ 'config-btn--open': configOpen }" @click="configOpen = !configOpen">
+          <button
+            ref="configBtnRef"
+            class="config-btn"
+            :class="{ 'config-btn--open': configOpen }"
+            @click="configOpen = !configOpen"
+          >
             <IconGear />
           </button>
           <Transition name="config-drop">
@@ -178,7 +182,6 @@ function totalForSlot(i: number): number {
         </template>
       </template>
     </div>
-
   </div>
 </template>
 
@@ -234,19 +237,23 @@ function totalForSlot(i: number): number {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px; height: 28px;
+  width: 28px;
+  height: 28px;
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-3);
   cursor: pointer;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
 }
 .config-btn:hover,
 .config-btn--open {
   color: var(--text-2);
   background: var(--surface2);
-  border-color: rgba(180,180,180,0.3);
+  border-color: rgba(180, 180, 180, 0.3);
 }
 
 /* ── Config dropdown panel ── */
@@ -281,7 +288,9 @@ function totalForSlot(i: number): number {
   gap: 16px;
   transition: background 0.1s;
 }
-.config-row:hover { background: var(--surface3); }
+.config-row:hover {
+  background: var(--surface3);
+}
 
 .config-row-label {
   font-size: 0.8rem;
@@ -292,7 +301,8 @@ function totalForSlot(i: number): number {
 /* pill toggle */
 .config-toggle {
   flex-shrink: 0;
-  width: 32px; height: 18px;
+  width: 32px;
+  height: 18px;
   border-radius: 9px;
   border: none;
   background: var(--surface3);
@@ -301,15 +311,21 @@ function totalForSlot(i: number): number {
   transition: background 0.2s;
   padding: 0;
 }
-.config-toggle--on { background: var(--accent); }
+.config-toggle--on {
+  background: var(--accent);
+}
 
 .config-toggle-knob {
   position: absolute;
-  top: 2px; left: 2px;
-  width: 14px; height: 14px;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--text-3);
-  transition: transform 0.2s, background 0.2s;
+  transition:
+    transform 0.2s,
+    background 0.2s;
   display: block;
 }
 .config-toggle--on .config-toggle-knob {
@@ -317,8 +333,17 @@ function totalForSlot(i: number): number {
   background: #111;
 }
 
-.config-drop-enter-active, .config-drop-leave-active { transition: opacity 0.12s ease, transform 0.12s ease; }
-.config-drop-enter-from,  .config-drop-leave-to      { opacity: 0; transform: translateY(-4px); }
+.config-drop-enter-active,
+.config-drop-leave-active {
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+.config-drop-enter-from,
+.config-drop-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
 
 /* ── Canvas overlay wrapper ── */
 .canvas-wrap {
@@ -337,7 +362,8 @@ function totalForSlot(i: number): number {
 
 .label-remove-btn {
   opacity: 0;
-  width: 16px; height: 16px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(0, 0, 0, 0.5);
@@ -349,12 +375,19 @@ function totalForSlot(i: number): number {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.15s, background 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
   flex-shrink: 0;
 }
 
-.label-hover-zone:hover .label-remove-btn { opacity: 1; }
-.label-remove-btn:hover { background: rgba(180, 40, 40, 0.7); border-color: rgba(220, 80, 80, 0.5); }
+.label-hover-zone:hover .label-remove-btn {
+  opacity: 1;
+}
+.label-remove-btn:hover {
+  background: rgba(180, 40, 40, 0.7);
+  border-color: rgba(220, 80, 80, 0.5);
+}
 
 .compare-overlay {
   position: absolute;
@@ -382,10 +415,13 @@ function totalForSlot(i: number): number {
 
   box-shadow:
     0 0 48px rgba(107, 255, 42, 0.28),
-    0 0 100px rgba(107, 255, 42, 0.10);
+    0 0 100px rgba(107, 255, 42, 0.1);
   text-shadow: 0 0 18px rgba(107, 255, 42, 0.55);
 
-  transition: box-shadow 0.3s, text-shadow 0.3s, opacity 0.2s;
+  transition:
+    box-shadow 0.3s,
+    text-shadow 0.3s,
+    opacity 0.2s;
   animation: compare-pulse 3.5s ease-in-out infinite;
 }
 
@@ -426,26 +462,52 @@ function totalForSlot(i: number): number {
 }
 
 @keyframes compare-pulse {
-  0%, 100% {
-    box-shadow: 0 0 36px rgba(107, 255, 42, 0.18), 0 0 80px rgba(107, 255, 42, 0.07);
+  0%,
+  100% {
+    box-shadow:
+      0 0 36px rgba(107, 255, 42, 0.18),
+      0 0 80px rgba(107, 255, 42, 0.07);
     text-shadow: 0 0 14px rgba(107, 255, 42, 0.4);
   }
   50% {
-    box-shadow: 0 0 60px rgba(107, 255, 42, 0.38), 0 0 120px rgba(107, 255, 42, 0.14);
+    box-shadow:
+      0 0 60px rgba(107, 255, 42, 0.38),
+      0 0 120px rgba(107, 255, 42, 0.14);
     text-shadow: 0 0 24px rgba(107, 255, 42, 0.75);
   }
 }
 
 @keyframes compare-flicker {
-  0%, 100% { opacity: 1; }
-  45%       { opacity: 1; }
-  50%       { opacity: 0.4; }
-  55%       { opacity: 1; }
-  80%       { opacity: 1; }
-  83%       { opacity: 0.6; }
-  86%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  55% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  83% {
+    opacity: 0.6;
+  }
+  86% {
+    opacity: 1;
+  }
 }
 
-.compare-fade-enter-active, .compare-fade-leave-active { transition: opacity 0.3s ease; }
-.compare-fade-enter-from,  .compare-fade-leave-to      { opacity: 0; }
+.compare-fade-enter-active,
+.compare-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.compare-fade-enter-from,
+.compare-fade-leave-to {
+  opacity: 0;
+}
 </style>
