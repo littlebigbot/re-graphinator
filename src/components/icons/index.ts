@@ -6,6 +6,7 @@ export { default as IconGear } from './IconGear.vue';
 export { default as IconClock } from './IconClock.vue';
 export { default as IconCaret } from './IconCaret.vue';
 export { default as IconCheck } from './IconCheck.vue';
+export { default as IconShare } from './IconShare.vue';
 
 /** Path data for the person silhouette, for use with D3 (viewBox: 0 0 60 90) */
 export const PERSON_SILHOUETTE = {

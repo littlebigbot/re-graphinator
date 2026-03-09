@@ -8,7 +8,7 @@ import { useClickOutside } from '@/composables/useClickOutside';
 import PersonCards from '@/components/PersonCards.vue';
 import VennCanvas from '@/components/VennCanvas.vue';
 import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue';
-import { IconGear } from '@/components/icons';
+import { IconGear, IconShare, IconCheck } from '@/components/icons';
 
 const props = defineProps<{
   slots: (TmdbPerson | TmdbTitle | null)[];
@@ -71,6 +71,26 @@ function roleFilterStyle(i: number): Record<string, string> {
 const canCompare = computed(() => props.slots.filter((slot) => slot !== null).length >= MIN_PERSONS);
 
 const emptyRoleCounts = EMPTY_ROLE_COUNTS;
+
+// ── Share button ──────────────────────────────────────────────────────────────
+const shareDone = ref(false);
+
+async function handleShare(): Promise<void> {
+  const url = window.location.href;
+  if (navigator.share) {
+    try {
+      await navigator.share({ url });
+    } catch {
+      // user dismissed — no feedback needed
+    }
+  } else {
+    await navigator.clipboard.writeText(url);
+    shareDone.value = true;
+    setTimeout(() => {
+      shareDone.value = false;
+    }, 2000);
+  }
+}
 
 /** Inclusive credit total for slot i across all visible regions. */
 function totalForSlot(i: number): number {
@@ -170,6 +190,14 @@ function totalForSlot(i: number): number {
           <button class="label-remove-btn" title="Remove" @click="emit('clear-slot', i)">✕</button>
         </div>
       </template> -->
+
+      <!-- ── Share button ── -->
+      <Transition name="compare-fade">
+        <button v-if="hasResults" class="share-btn" :class="{ 'share-btn--done': shareDone }" @click="handleShare">
+          <IconCheck v-if="shareDone" :width="14" :height="14" />
+          <IconShare v-else :width="14" :height="14" />
+        </button>
+      </Transition>
 
       <!-- ── Role filter dropdowns — post-compare, person mode only ── -->
       <template v-if="hasResults && searchMode === 'person'">
@@ -519,5 +547,35 @@ function totalForSlot(i: number): number {
 .compare-fade-enter-from,
 .compare-fade-leave-to {
   opacity: 0;
+}
+
+/* ── Share button ── */
+.share-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+}
+.share-btn:hover {
+  color: var(--text-2);
+  background: var(--surface3);
+  border-color: rgba(180, 180, 180, 0.3);
+}
+.share-btn--done {
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.4);
 }
 </style>

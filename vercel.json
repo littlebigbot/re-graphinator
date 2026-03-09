@@ -5,9 +5,7 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/",
-      "has": [{ "type": "query", "key": "mode" }],
-      "missing": [{ "type": "query", "key": "_" }],
+      "source": "/share",
       "destination": "/api/preview"
     }
   ]
