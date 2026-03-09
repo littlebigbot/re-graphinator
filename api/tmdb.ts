@@ -4,8 +4,11 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 
 const ALLOWED_PATHS = [
   /^\/search\/(person|multi)$/,
+  /^\/person\/\d+$/,
   /^\/person\/\d+\/combined_credits$/,
+  /^\/movie\/\d+$/,
   /^\/movie\/\d+\/credits$/,
+  /^\/tv\/\d+$/,
   /^\/tv\/\d+\/aggregate_credits$/,
 ];
 

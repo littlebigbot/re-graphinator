@@ -1,0 +1,41 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#04090a"/>
+  <rect x="1" y="1" width="1198" height="628" fill="none" stroke="#0f1a16" stroke-width="1"/>
+
+  <defs>
+    <filter id="glow-y" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-g" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-r" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="clip-left">
+      <circle cx="455" cy="295" r="225"/>
+    </clipPath>
+  </defs>
+
+  <!-- Circle fills -->
+  <circle cx="455" cy="295" r="225" fill="#f5c518" fill-opacity="0.08" filter="url(#glow-y)"/>
+  <circle cx="745" cy="295" r="225" fill="#6bff2a" fill-opacity="0.08" filter="url(#glow-g)"/>
+
+  <!-- Red overlap -->
+  <circle cx="745" cy="295" r="225" fill="#d41c1c" fill-opacity="0.55" clip-path="url(#clip-left)" filter="url(#glow-r)"/>
+
+  <!-- Circle strokes -->
+  <circle cx="455" cy="295" r="225" fill="none" stroke="#f5c518" stroke-width="1.5" stroke-opacity="0.7" filter="url(#glow-y)"/>
+  <circle cx="745" cy="295" r="225" fill="none" stroke="#6bff2a" stroke-width="1.5" stroke-opacity="0.7" filter="url(#glow-g)"/>
+
+  <!-- Wordmark -->
+  <text x="600" y="572" text-anchor="middle" fill="#6bff2a" fill-opacity="0.9"
+        font-family="Arial, sans-serif" font-size="30" font-weight="900"
+        letter-spacing="10" font-style="italic">RE-GRAPHINATOR</text>
+  <text x="600" y="600" text-anchor="middle" fill="#2f5c40"
+        font-family="Georgia, serif" font-style="italic"
+        font-size="13" letter-spacing="3">Filmography Overlap System</text>
+</svg>

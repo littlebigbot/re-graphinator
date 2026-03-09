@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import type {
   TmdbPerson,
   TmdbTitle,
@@ -14,6 +14,7 @@ import type { HistoryEntry } from '@/composables/useHistory';
 import { PERSON_COLORS, ALL_ROLE_CATS } from '@/types/tmdb';
 import { useTheme } from '@/composables/useTheme';
 import { useCredits } from '@/composables/useCredits';
+import { useTmdb } from '@/composables/useTmdb';
 import { useVennState } from '@/composables/useVennState';
 import { useHistory } from '@/composables/useHistory';
 import { surname } from '@/utils/names';
@@ -113,6 +114,57 @@ const displayCastItems = computed<CastMemberInRegion[]>(() => {
   return collectRegionItems(titleRegions.value, mask).sort(castComparator(castSortBy.value));
 });
 
+// ── Permalink ─────────────────────────────────────────────────────────────────
+const { fetchPersonById, fetchTitleById } = useTmdb();
+
+function pushPermalink(): void {
+  const params = new URLSearchParams();
+  if (searchMode.value === 'title') {
+    params.set('mode', 'title');
+    params.set('ids', activeTitles.value.map((title) => `${title.id}:${title.media_type}`).join(','));
+  } else {
+    params.set('mode', 'person');
+    params.set('ids', activePeople.value.map((person) => person.id).join(','));
+  }
+  window.history.replaceState({}, '', `?${params.toString()}`);
+}
+
+onMounted(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode') as 'person' | 'title' | null;
+  const idsParam = params.get('ids');
+  if (!mode || !idsParam) {
+    return;
+  }
+  try {
+    if (mode === 'person') {
+      const ids = idsParam.split(',').map(Number).filter(Boolean);
+      if (ids.length < 2) {
+        return;
+      }
+      const people = await Promise.all(ids.map(fetchPersonById));
+      setSlots(people);
+      applyPersonResults(await fetchAll(people));
+    } else {
+      const entries = idsParam
+        .split(',')
+        .map((entry) => {
+          const [id, mediaType] = entry.split(':');
+          return { id: Number(id), mediaType: mediaType as 'movie' | 'tv' };
+        })
+        .filter((entry) => entry.id && entry.mediaType);
+      if (entries.length < 2) {
+        return;
+      }
+      const titles = await Promise.all(entries.map((entry) => fetchTitleById(entry.id, entry.mediaType)));
+      setSlots(titles);
+      applyTitleResults(await fetchAllCast(titles));
+    }
+  } catch (err) {
+    console.warn('Failed to restore from URL:', err);
+  }
+});
+
 // ── Orchestration (wires useCredits ↔ useVennState ↔ useHistory) ──────────────
 async function runCompare(): Promise<void> {
   compactSlots(); // strip any unfilled null slots before comparing
@@ -133,6 +185,7 @@ async function runCompare(): Promise<void> {
       savePersonHistory(activePeople.value);
       historyRef.value?.refresh();
     }
+    pushPermalink();
   } catch (err) {
     alert(`Error fetching data: ${err instanceof Error ? err.message : String(err)}`);
   }

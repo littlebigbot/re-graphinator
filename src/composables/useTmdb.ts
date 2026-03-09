@@ -309,5 +309,43 @@ export function useTmdb() {
     });
   }
 
-  return { searchPeople, fetchCredits, searchTitles, searchAll, fetchCast };
+  async function fetchPersonById(id: number): Promise<TmdbPerson> {
+    const data = await request<{
+      id: number;
+      name: string;
+      profile_path: string | null;
+      known_for_department: string;
+    }>(`/person/${id}`);
+    return {
+      id: data.id,
+      name: data.name,
+      profile_path: data.profile_path ?? null,
+      known_for_department: data.known_for_department ?? '',
+      known_for: [],
+    };
+  }
+
+  async function fetchTitleById(id: number, mediaType: 'movie' | 'tv'): Promise<TmdbTitle> {
+    const data = await request<{
+      id: number;
+      title?: string;
+      name?: string;
+      poster_path: string | null;
+      release_date?: string;
+      first_air_date?: string;
+      vote_average: number;
+      overview?: string;
+    }>(`/${mediaType}/${id}`);
+    return {
+      id: data.id,
+      name: data.title ?? data.name ?? 'Untitled',
+      media_type: mediaType,
+      poster_path: data.poster_path ?? null,
+      release_date: data.release_date ?? data.first_air_date ?? '',
+      vote_average: data.vote_average ?? 0,
+      overview: data.overview,
+    };
+  }
+
+  return { searchPeople, fetchCredits, searchTitles, searchAll, fetchCast, fetchPersonById, fetchTitleById };
 }
