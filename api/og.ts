@@ -4,14 +4,21 @@ export const config = { runtime: 'edge' };
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/';
-
-// Re-Animator palette — must match PERSON_COLORS in src/types/tmdb.ts
 const SLOT_COLORS = ['#6bff2a', '#c8e020', '#2bc9ff', '#d41c1c', '#c87dff'];
 
-// ── Satori element builder ─────────────────────────────────────────────────────
-// Satori accepts the same virtual-DOM shape as React but we don't need React
-// itself — plain objects work fine.
+// ── Bebas Neue font — loaded once per edge instance ───────────────────────────
+const fontPromise: Promise<ArrayBuffer> = fetch('https://fonts.googleapis.com/css2?family=Bebas+Neue', {
+  headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+})
+  .then((r) => r.text())
+  .then((css) => {
+    const match = css.match(/src:\s*url\(([^)]+)\)/);
+    if (!match?.[1]) throw new Error('font url not found');
+    return fetch(match[1]).then((r) => r.arrayBuffer());
+  })
+  .catch(() => new ArrayBuffer(0));
 
+// ── Satori element builder ────────────────────────────────────────────────────
 type SatoriStyle = Record<string, string | number | undefined>;
 
 interface SatoriNode {
@@ -38,7 +45,6 @@ function el(
 }
 
 // ── TMDB helpers ──────────────────────────────────────────────────────────────
-
 async function tmdb<T>(path: string, apiKey: string): Promise<T> {
   const url = new URL(TMDB_BASE + path);
   url.searchParams.set('api_key', apiKey);
@@ -80,136 +86,187 @@ async function resolveSubjects(mode: 'person' | 'title', rawIds: string, apiKey:
     );
     return titles.map((t, i) => ({
       name: t.title ?? t.name ?? 'Untitled',
-      image: t.poster_path ? `${IMG_BASE}w154${t.poster_path}` : null,
+      image: t.poster_path ? `${IMG_BASE}w342${t.poster_path}` : null,
       color: SLOT_COLORS[i] ?? '#ffffff',
     }));
   }
 }
 
-// ── Layout builders ───────────────────────────────────────────────────────────
+// ── Layout helpers ────────────────────────────────────────────────────────────
 
-function buildSubjectCard(s: SubjectInfo, isTitle: boolean): SatoriNode {
-  const imgSize = isTitle ? 80 : 90;
-  const frameH = isTitle ? imgSize * 1.5 + 6 : imgSize + 6;
+// Circle geometry — mirrors og.svg
+const R = 195;
+const LEFT_CX = 440;
+const RIGHT_CX = 760;
+const CY = 248;
+// Overlap: LEFT_CX + R = 635, RIGHT_CX - R = 565 → 70px wide lens
 
-  const frameContent: SatoriNode = s.image
-    ? el('img', { objectFit: 'cover', width: '100%', height: '100%' }, undefined, {
-        src: s.image,
-        width: imgSize,
-        height: isTitle ? imgSize * 1.5 : imgSize,
-      })
-    : el('div', { color: s.color, fontSize: 32, opacity: 0.5, display: 'flex' }, '?');
+// Fallback circle colours when no subject assigned
+const FALLBACK_COLORS = ['rgba(245,197,24,0.55)', 'rgba(107,255,42,0.55)'];
 
-  const frame = el(
+function makeCircle(cx: number, subject: SubjectInfo | undefined, isTitle: boolean, slotIndex: number): SatoriNode {
+  const d = R * 2;
+  const color = subject?.color ?? FALLBACK_COLORS[slotIndex] ?? '#ffffff';
+  const borderColor = subject ? color : `${color}`;
+  const borderOpacity = subject ? 1 : 0.5;
+
+  let inner: SatoriNode;
+  if (subject?.image) {
+    inner = el('img', { width: d, height: d, objectFit: 'cover' }, undefined, { src: subject.image });
+  } else {
+    // No photo — faint branded fill matching og.svg
+    const bgColor = slotIndex === 0 ? 'rgba(245,197,24,0.08)' : 'rgba(107,255,42,0.08)';
+    inner = el('div', {
+      width: d,
+      height: d,
+      background: subject ? '#0f1a16' : bgColor,
+      display: 'flex',
+    });
+  }
+
+  return el(
     'div',
     {
-      width: imgSize + 6,
-      height: frameH,
-      borderRadius: isTitle ? 8 : '50%',
-      border: `3px solid ${s.color}`,
-      boxShadow: `0 0 24px ${s.color}55`,
+      position: 'absolute',
+      left: cx - R,
+      top: CY - R,
+      width: d,
+      height: d,
+      borderRadius: isTitle ? 20 : '50%',
       overflow: 'hidden',
-      background: '#0f1a16',
+      border: `2.5px solid ${borderColor}`,
+      opacity: borderOpacity,
+      boxShadow: `0 0 48px ${color}44`,
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
     },
-    frameContent,
+    inner,
   );
+}
 
-  const label = el(
-    'span',
+function makeName(cx: number, subject: SubjectInfo): SatoriNode {
+  return el(
+    'div',
     {
-      color: s.color,
-      fontSize: 15,
-      fontWeight: 700,
-      textAlign: 'center',
-      maxWidth: isTitle ? 100 : 120,
-      letterSpacing: '0.02em',
-      textShadow: `0 0 12px ${s.color}88`,
+      position: 'absolute',
+      left: cx - 170,
+      top: CY + R + 16,
+      width: 340,
       display: 'flex',
+      justifyContent: 'center',
+      color: subject.color,
+      fontFamily: 'Bebas Neue',
+      fontStyle: 'italic',
+      fontSize: 28,
+      letterSpacing: 2,
+      textShadow: `0 0 18px ${subject.color}77`,
     },
-    s.name,
+    subject.name,
   );
+}
 
-  return el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }, [frame, label]);
+function buildWordmark(): SatoriNode {
+  const bigR: SatoriStyle = {
+    fontFamily: 'Bebas Neue',
+    fontStyle: 'italic',
+    fontSize: 60,
+    color: '#6bff2a',
+    lineHeight: 1,
+    display: 'flex',
+    letterSpacing: 3,
+  };
+  const body: SatoriStyle = { ...bigR, fontSize: 46 };
+
+  return el(
+    'div',
+    {
+      position: 'absolute',
+      left: 0,
+      bottom: 22,
+      width: 1200,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 5,
+    },
+    [
+      el(
+        'div',
+        {
+          display: 'flex',
+          alignItems: 'baseline',
+          textShadow: '0 0 24px rgba(107,255,42,0.6)',
+        },
+        [el('span', bigR, 'R'), el('span', body, 'E-GRAPHINATO'), el('span', bigR, 'R')],
+      ),
+      el(
+        'span',
+        {
+          color: '#2f5c40',
+          fontSize: 13,
+          letterSpacing: 4,
+          fontStyle: 'italic',
+          display: 'flex',
+        },
+        'Filmography Overlap System',
+      ),
+    ],
+  );
 }
 
 function buildLayout(subjects: SubjectInfo[], mode: 'person' | 'title'): SatoriNode {
   const isTitle = mode === 'title';
+  const s0 = subjects[0];
+  const s1 = subjects[1];
+  const extras = subjects.slice(2);
 
-  const leftCircle = el('div', {
+  // Overlap tint — red strip over the 70px lens
+  const overlapStart = RIGHT_CX - R; // 565
+  const overlapEnd = LEFT_CX + R; // 635
+  const overlapW = overlapEnd - overlapStart; // 70
+  const overlapEl = el('div', {
     position: 'absolute',
-    left: 120,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: 320,
-    height: 320,
-    borderRadius: '50%',
-    background: 'rgba(245,197,24,0.06)',
-    border: '1.5px solid rgba(245,197,24,0.4)',
-    boxShadow: '0 0 60px rgba(245,197,24,0.15)',
+    left: overlapStart,
+    top: CY - R,
+    width: overlapW,
+    height: R * 2,
+    background: 'rgba(212,28,28,0.38)',
     display: 'flex',
   });
 
-  const rightCircle = el('div', {
-    position: 'absolute',
-    right: 120,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: 320,
-    height: 320,
-    borderRadius: '50%',
-    background: 'rgba(107,255,42,0.06)',
-    border: '1.5px solid rgba(107,255,42,0.4)',
-    boxShadow: '0 0 60px rgba(107,255,42,0.15)',
-    display: 'flex',
-  });
+  // Names below circles
+  const nameLeft = s0 ? makeName(LEFT_CX, s0) : el('div', { display: 'flex' });
+  const nameRight = s1 ? makeName(RIGHT_CX, s1) : el('div', { display: 'flex' });
 
-  const subjectsRow =
-    subjects.length > 0
+  // Extra subjects (3+): small name strip between names and wordmark
+  const extrasRow =
+    extras.length > 0
       ? el(
           'div',
           {
+            position: 'absolute',
+            left: 0,
+            top: CY + R + 58,
+            width: 1200,
             display: 'flex',
-            gap: 28,
-            alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 40,
-            flexWrap: 'wrap',
-            maxWidth: 1000,
-            padding: '0 60px',
+            gap: 24,
           },
-          subjects.map((s) => buildSubjectCard(s, isTitle)),
+          extras.map((s) =>
+            el(
+              'span',
+              {
+                color: s.color,
+                fontFamily: 'Bebas Neue',
+                fontStyle: 'italic',
+                fontSize: 20,
+                letterSpacing: 2,
+                display: 'flex',
+              },
+              s.name,
+            ),
+          ),
         )
-      : el('div', { marginBottom: 40, display: 'flex' });
-
-  const wordmark = el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }, [
-    el(
-      'span',
-      {
-        color: '#6bff2a',
-        fontSize: 36,
-        fontWeight: 900,
-        letterSpacing: 12,
-        fontStyle: 'italic',
-        textShadow: '0 0 20px rgba(107,255,42,0.6)',
-        display: 'flex',
-      },
-      'RE-GRAPHINATOR',
-    ),
-    el(
-      'span',
-      {
-        color: '#2f5c40',
-        fontSize: 14,
-        letterSpacing: 4,
-        fontStyle: 'italic',
-        display: 'flex',
-      },
-      'Filmography Overlap System',
-    ),
-  ]);
+      : el('div', { display: 'flex' });
 
   return el(
     'div',
@@ -218,18 +275,21 @@ function buildLayout(subjects: SubjectInfo[], mode: 'person' | 'title'): SatoriN
       height: 630,
       background: '#04090a',
       display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'Arial, sans-serif',
       position: 'relative',
     },
-    [leftCircle, rightCircle, subjectsRow, wordmark],
+    [
+      makeCircle(LEFT_CX, s0, isTitle, 0),
+      makeCircle(RIGHT_CX, s1, isTitle, 1),
+      overlapEl,
+      nameLeft,
+      nameRight,
+      extrasRow,
+      buildWordmark(),
+    ],
   );
 }
 
 // ── Edge function ─────────────────────────────────────────────────────────────
-
 export default async function handler(req: Request) {
   const { searchParams } = new URL(req.url, 'https://re-graphinator.vercel.app');
   const mode = (searchParams.get('mode') ?? 'person') as 'person' | 'title';
@@ -246,6 +306,12 @@ export default async function handler(req: Request) {
     }
   }
 
+  const fontData = await fontPromise;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return new ImageResponse(buildLayout(subjects, mode) as any, { width: 1200, height: 630 });
+  return new ImageResponse(buildLayout(subjects, mode) as any, {
+    width: 1200,
+    height: 630,
+    fonts: fontData.byteLength > 0 ? [{ name: 'Bebas Neue', data: fontData, style: 'italic', weight: 400 }] : [],
+  });
 }
