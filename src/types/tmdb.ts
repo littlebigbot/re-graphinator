@@ -250,7 +250,7 @@ export function computeRegions(creditArrays: Project[][]): Map<RegionMask, Proje
   return computeRegionsBase(
     creditArrays,
     (item) => `${(item as Project).media_type}-${item.id}`,
-    (item) => ({ ...(item as Project), rolesByPerson: {} }),
+    (item) => ({ ...(item as Project), rolesByPerson: {} as Record<number, string[]> }),
     (enriched, i, roles) => {
       enriched.rolesByPerson[i] = roles;
     },
@@ -265,7 +265,7 @@ export function computeRegionsCast(castArrays: CastMember[][]): Map<RegionMask, 
   return computeRegionsBase(
     castArrays,
     (item) => `person-${item.id}`,
-    (item) => ({ ...(item as CastMember), rolesBySlot: {} }),
+    (item) => ({ ...(item as CastMember), rolesBySlot: {} as Record<number, string[]> }),
     (enriched, i, roles) => {
       enriched.rolesBySlot[i] = roles;
     },
