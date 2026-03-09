@@ -93,7 +93,7 @@ const LABELS: Record<string, string> = {
 
 .theme-btn:hover {
   color: var(--accent);
-  border-color: rgba(107, 255, 42, 0.25);
+  border-color: rgba(var(--accent-rgb), 0.25);
   background: var(--accent-dim);
 }
 

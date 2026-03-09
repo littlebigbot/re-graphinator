@@ -29,3 +29,17 @@ export function isToggleDisabled(enabledMask: number, i: number): boolean {
 export function activeBits(mask: number, length: number): number[] {
   return Array.from({ length }, (_, i) => i).filter((i) => (mask >> i) & 1);
 }
+
+/**
+ * Collects all items from regions whose bitmask is a superset of `mask`.
+ * i.e. returns every item visible when `mask` is selected.
+ */
+export function collectRegionItems<T>(regionMap: Map<number, T[]>, mask: number): T[] {
+  const result: T[] = [];
+  for (const [regionMask, items] of regionMap) {
+    if ((regionMask & mask) === mask) {
+      result.push(...items);
+    }
+  }
+  return result;
+}

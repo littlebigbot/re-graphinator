@@ -1,8 +1,4 @@
-/* Define reusable styles */
-.btn-primary {
-  @apply bg-blue-500 text-white px-4 py-2 rounded;
-}
-
-.card {
-  @apply shadow-lg p-4 bg-white rounded-lg;
+:root {
+  --color-primary: #1e40af; /* Custom primary color */
+  --color-secondary: #9333ea; /* Custom secondary color */
 }

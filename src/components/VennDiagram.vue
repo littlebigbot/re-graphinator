@@ -197,7 +197,7 @@ function totalForSlot(i: number): number {
   border-radius: var(--r);
   padding: 20px 24px 16px;
   margin-bottom: 28px;
-  box-shadow: inset 0 0 60px rgba(107, 255, 42, 0.02);
+  box-shadow: inset 0 0 60px rgba(var(--accent-rgb), 0.02);
 }
 
 .logo-row {
@@ -414,7 +414,7 @@ function totalForSlot(i: number): number {
   color: var(--accent);
   /* Double border: solid inner + faint outer ring via outline */
   border: 2px solid var(--accent);
-  outline: 1px solid rgba(107, 255, 42, 0.25);
+  outline: 1px solid rgba(var(--accent-rgb), 0.25);
   outline-offset: 5px;
   padding: 18px 52px;
   border-radius: 0;
@@ -424,9 +424,9 @@ function totalForSlot(i: number): number {
   pointer-events: auto;
 
   box-shadow:
-    0 0 48px rgba(107, 255, 42, 0.28),
-    0 0 100px rgba(107, 255, 42, 0.1);
-  text-shadow: 0 0 18px rgba(107, 255, 42, 0.55);
+    0 0 48px rgba(var(--accent-rgb), 0.28),
+    0 0 100px rgba(var(--accent-rgb), 0.1);
+  text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.55);
 
   transition:
     box-shadow 0.3s,
@@ -448,15 +448,15 @@ function totalForSlot(i: number): number {
   font-style: italic;
   font-size: 0.68rem;
   letter-spacing: 0.04em;
-  color: rgba(107, 255, 42, 0.5);
+  color: rgba(var(--accent-rgb), 0.5);
 }
 
 .compare-overlay:hover:not(:disabled) {
   animation: none;
   box-shadow:
-    0 0 64px rgba(107, 255, 42, 0.5),
-    0 0 120px rgba(107, 255, 42, 0.2);
-  text-shadow: 0 0 24px rgba(107, 255, 42, 0.9);
+    0 0 64px rgba(var(--accent-rgb), 0.5),
+    0 0 120px rgba(var(--accent-rgb), 0.2);
+  text-shadow: 0 0 24px rgba(var(--accent-rgb), 0.9);
 }
 
 .compare-overlay--loading .compare-label {
@@ -475,15 +475,15 @@ function totalForSlot(i: number): number {
   0%,
   100% {
     box-shadow:
-      0 0 36px rgba(107, 255, 42, 0.18),
-      0 0 80px rgba(107, 255, 42, 0.07);
-    text-shadow: 0 0 14px rgba(107, 255, 42, 0.4);
+      0 0 36px rgba(var(--accent-rgb), 0.18),
+      0 0 80px rgba(var(--accent-rgb), 0.07);
+    text-shadow: 0 0 14px rgba(var(--accent-rgb), 0.4);
   }
   50% {
     box-shadow:
-      0 0 60px rgba(107, 255, 42, 0.38),
-      0 0 120px rgba(107, 255, 42, 0.14);
-    text-shadow: 0 0 24px rgba(107, 255, 42, 0.75);
+      0 0 60px rgba(var(--accent-rgb), 0.38),
+      0 0 120px rgba(var(--accent-rgb), 0.14);
+    text-shadow: 0 0 24px rgba(var(--accent-rgb), 0.75);
   }
 }
 

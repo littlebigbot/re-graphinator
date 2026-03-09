@@ -160,22 +160,6 @@ function hideOnError(e: Event): void {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--slot-color) 14%, transparent);
 }
 
-/* ── Dropdown ── */
-.search-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  box-shadow: var(--shadow);
-  z-index: 100;
-  overflow: hidden;
-  max-height: 340px;
-  overflow-y: auto;
-}
-
 .dropdown-item-badge {
   background: color-mix(in srgb, var(--slot-color) 15%, transparent);
   color: var(--slot-color);

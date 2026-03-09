@@ -34,19 +34,11 @@ const emit = defineEmits<{
   </section>
 </template>
 
+<style>
+@import '@/style/grid.css';
+</style>
+
 <style scoped>
-.grid-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.results-count {
-  font-size: 0.78rem;
-  color: var(--text-3);
-}
-
 .scroll-area {
   max-height: 640px;
   overflow-y: auto;

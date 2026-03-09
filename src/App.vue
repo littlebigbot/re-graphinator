@@ -18,6 +18,7 @@ import { useVennState } from '@/composables/useVennState';
 import { useHistory } from '@/composables/useHistory';
 import { surname } from '@/utils/names';
 import { projectComparator, castComparator } from '@/utils/sort';
+import { collectRegionItems } from '@/utils/bitmask';
 import VennDiagram from '@/components/VennDiagram.vue';
 import MovieGrid from '@/components/MovieGrid.vue';
 import CastGrid from '@/components/CastGrid.vue';
@@ -101,14 +102,8 @@ const displayItems = computed<ProjectWithRoles[]>(() => {
     return [];
   }
   const mask = selectedMask.value > 0 ? selectedMask.value : allMask.value;
-  const raw: ProjectWithRoles[] = [];
-  for (const [regionMask, items] of regions.value) {
-    if ((regionMask & mask) === mask) {
-      raw.push(...items);
-    }
-  }
+  const raw = collectRegionItems(regions.value, mask);
   const filtered = activeType.value === 'all' ? raw : raw.filter((project) => project.media_type === activeType.value);
-
   return filtered.sort(projectComparator(sortBy.value));
 });
 
@@ -118,13 +113,7 @@ const displayCastItems = computed<CastMemberInRegion[]>(() => {
     return [];
   }
   const mask = selectedMask.value > 0 ? selectedMask.value : allMask.value;
-  const raw: CastMemberInRegion[] = [];
-  for (const [regionMask, items] of titleRegions.value) {
-    if ((regionMask & mask) === mask) {
-      raw.push(...items);
-    }
-  }
-  return raw.sort(castComparator(castSortBy.value));
+  return collectRegionItems(titleRegions.value, mask).sort(castComparator(castSortBy.value));
 });
 
 // ── Orchestration (wires useCredits ↔ useVennState ↔ useHistory) ──────────────
@@ -356,7 +345,7 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
 }
 .filter-btn.active {
   background: var(--accent-dim);
-  border-color: rgba(107, 255, 42, 0.3);
+  border-color: rgba(var(--accent-rgb), 0.3);
   color: var(--accent);
 }
 

@@ -99,8 +99,8 @@ function rolesStr(roles: string[]): string {
 }
 
 .movie-card:hover {
-  border-color: rgba(107, 255, 42, 0.3);
-  box-shadow: 0 0 12px rgba(107, 255, 42, 0.12);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.12);
 }
 
 .poster-wrap {

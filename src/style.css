@@ -13,6 +13,7 @@
   --dark-surface: #090f0d;
   --dark-surface2: #0f1a16;
   --dark-surface3: #172319;
+  --dark-accent-rgb: 107, 255, 42;
   --dark-accent: #6bff2a;
   --dark-accent-dim: rgba(107, 255, 42, 0.1);
   --dark-accent-glow: 0 0 18px rgba(107, 255, 42, 0.35);
@@ -29,6 +30,7 @@
   --light-surface: #e6f0e7;
   --light-surface2: #dce9de;
   --light-surface3: #cfe0d0;
+  --light-accent-rgb: 26, 156, 0;
   --light-accent: #1a9c00;
   --light-accent-dim: rgba(26, 156, 0, 0.1);
   --light-accent-glow: 0 0 12px rgba(26, 156, 0, 0.2);
@@ -47,6 +49,7 @@
   --surface: var(--dark-surface);
   --surface2: var(--dark-surface2);
   --surface3: var(--dark-surface3);
+  --accent-rgb: var(--dark-accent-rgb);
   --accent: var(--dark-accent);
   --accent-dim: var(--dark-accent-dim);
   --accent-glow: var(--dark-accent-glow);
@@ -67,6 +70,7 @@
     --surface: var(--light-surface);
     --surface2: var(--light-surface2);
     --surface3: var(--light-surface3);
+    --accent-rgb: var(--light-accent-rgb);
     --accent: var(--light-accent);
     --accent-dim: var(--light-accent-dim);
     --accent-glow: var(--light-accent-glow);
@@ -86,6 +90,7 @@
   --surface: var(--light-surface);
   --surface2: var(--light-surface2);
   --surface3: var(--light-surface3);
+  --accent-rgb: var(--light-accent-rgb);
   --accent: var(--light-accent);
   --accent-dim: var(--light-accent-dim);
   --accent-glow: var(--light-accent-glow);

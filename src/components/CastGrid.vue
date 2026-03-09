@@ -106,19 +106,11 @@ function activeTitleIndices(): number[] {
   </section>
 </template>
 
+<style>
+@import '@/style/grid.css';
+</style>
+
 <style scoped>
-.grid-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.results-count {
-  font-size: 0.78rem;
-  color: var(--text-3);
-}
-
 .sort-select {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -154,8 +146,8 @@ function activeTitleIndices(): number[] {
 }
 
 .cast-card:hover {
-  border-color: rgba(107, 255, 42, 0.3);
-  box-shadow: 0 0 12px rgba(107, 255, 42, 0.07);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.07);
 }
 
 .photo-wrap {

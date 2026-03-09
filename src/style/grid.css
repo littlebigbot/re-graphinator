@@ -1,0 +1,12 @@
+/* ── Shared grid header styles (MovieGrid, CastGrid) ── */
+.grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.results-count {
+  font-size: 0.78rem;
+  color: var(--text-3);
+}

@@ -70,7 +70,7 @@ const emit = defineEmits<{
   padding: 6px 16px;
   border-radius: 6px;
   border: none;
-  background: rgba(107, 255, 42, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
   color: #8fff5a;
   font-size: 0.8rem;
   font-weight: 600;
@@ -79,7 +79,7 @@ const emit = defineEmits<{
 }
 
 .confirm-yes:hover {
-  background: rgba(107, 255, 42, 0.3);
+  background: rgba(var(--accent-rgb), 0.3);
 }
 
 .confirm-no {
