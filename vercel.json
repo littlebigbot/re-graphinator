@@ -2,5 +2,19 @@
   "buildCommand": "yarn build",
   "outputDirectory": "dist",
   "devCommand": "yarn dev",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        { "type": "query", "key": "mode" },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Discordbot|Twitterbot|facebookexternalhit|LinkedInBot|Slackbot|TelegramBot|WhatsApp|bot|Bot).*"
+        }
+      ],
+      "destination": "/api/preview"
+    }
+  ]
 }
