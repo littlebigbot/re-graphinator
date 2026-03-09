@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, watch, computed } from 'vue';
-import type { Ref } from 'vue';
+import { ref, watch, computed } from 'vue';
 import type { TmdbPerson, TmdbTitle, SearchMode } from '@/types/tmdb';
 import { PERSON_COLORS, isPersonSlot } from '@/types/tmdb';
 import { profileUrl, posterUrl } from '@/composables/useTmdb';
@@ -22,8 +21,6 @@ const emit = defineEmits<{
 }>();
 
 // ── API ───────────────────────────────────────────────────────────────────────
-const apiKey = inject<Ref<string>>('apiKey')!;
-
 const color = computed(() => PERSON_COLORS[props.index] ?? PERSON_COLORS[0]);
 
 // ── Local state ───────────────────────────────────────────────────────────────
@@ -31,7 +28,7 @@ const query = ref('');
 const container = ref<HTMLElement | null>(null);
 
 // ── Search dropdown ───────────────────────────────────────────────────────────
-const { dropdown, showDrop, search: runSearch } = useSearchDropdown(apiKey, () => props.searchMode);
+const { dropdown, showDrop, search: runSearch } = useSearchDropdown(() => props.searchMode);
 watch(query, runSearch);
 useClickOutside([container], () => {
   showDrop.value = false;

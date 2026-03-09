@@ -1,5 +1,4 @@
 import { ref } from 'vue';
-import type { Ref } from 'vue';
 import type { TmdbPerson, TmdbTitle, Project, CastMember } from '@/types/tmdb';
 import { useTmdb } from '@/composables/useTmdb';
 
@@ -28,8 +27,8 @@ function cacheKey(ps: TmdbPerson[]): string {
     .join(',');
 }
 
-export function useCredits(apiKey: Ref<string>) {
-  const { fetchCredits, fetchCast } = useTmdb(apiKey);
+export function useCredits() {
+  const { fetchCredits, fetchCast } = useTmdb();
   const isLoading = ref(false);
 
   async function withLoading<T>(fn: () => Promise<T>): Promise<T> {

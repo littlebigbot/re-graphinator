@@ -30,7 +30,7 @@ yarn install
 cp .env.example .env
 ```
 
-Open `.env` and replace `your_tmdb_api_key_here` with your key.
+Open `.env` and replace `your_tmdb_api_key_here` with your TMDB API key.
 
 **4. Run**
 
@@ -38,7 +38,7 @@ Open `.env` and replace `your_tmdb_api_key_here` with your key.
 yarn dev
 ```
 
-App runs at `http://localhost:5173`.
+App runs at `http://localhost:5173`. In dev mode the app calls TMDB directly using `DEV_TMDB_API_KEY` — that key is only ever present in local dev builds and never reaches production. In production, all API calls go through the Vercel proxy function using the server-side `TMDB_API_KEY`.
 
 ## Stack
 

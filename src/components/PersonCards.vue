@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, watch, nextTick } from 'vue';
-import type { Ref } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import type { TmdbPerson, TmdbTitle, Project, CastMember, SearchMode } from '@/types/tmdb';
 import { PERSON_COLORS, isPersonSlot } from '@/types/tmdb';
 import { IconPerson } from '@/components/icons';
@@ -64,8 +63,6 @@ function slotCount(i: number): number {
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
-const apiKey = inject<Ref<string>>('apiKey')!;
-
 const query = ref('');
 const highlightIdx = ref(-1);
 const backspaceArmed = ref(false);
@@ -77,7 +74,6 @@ const {
   showDrop,
   search: runSearch,
 } = useSearchDropdown(
-  apiKey,
   () => props.searchMode,
   () => {
     highlightIdx.value = -1;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, provide } from 'vue';
+import { ref, computed } from 'vue';
 import type {
   TmdbPerson,
   TmdbTitle,
@@ -29,10 +29,7 @@ import DebugPanel from '@/components/DebugPanel.vue';
 // ── Root-level singletons ─────────────────────────────────────────────────────
 useTheme();
 
-const apiKey = ref(import.meta.env.VITE_TMDB_API_KEY ?? '');
-provide('apiKey', apiKey);
-
-const { isLoading, getCached, fetchAll, fetchAllCast } = useCredits(apiKey);
+const { isLoading, getCached, fetchAll, fetchAllCast } = useCredits();
 const { savePerson: savePersonHistory, saveTitle: saveTitleHistory } = useHistory();
 const historyRef = ref<InstanceType<typeof SearchHistory> | null>(null);
 
@@ -118,9 +115,6 @@ const displayCastItems = computed<CastMemberInRegion[]>(() => {
 
 // ── Orchestration (wires useCredits ↔ useVennState ↔ useHistory) ──────────────
 async function runCompare(): Promise<void> {
-  if (!apiKey.value) {
-    return;
-  }
   compactSlots(); // strip any unfilled null slots before comparing
   hasResults.value = false;
   try {

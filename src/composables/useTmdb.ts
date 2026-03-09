@@ -1,4 +1,3 @@
-import type { Ref } from 'vue';
 import type {
   TmdbPerson,
   TmdbTitle,
@@ -13,6 +12,7 @@ import type {
 } from '@/types/tmdb';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
+const TMDB_PROXY = '/api/tmdb';
 
 export const IMG_BASE = 'https://image.tmdb.org/t/p/';
 export const profileUrl = (path: string | null) => (path ? `${IMG_BASE}w185${path}` : '');
@@ -53,10 +53,18 @@ function roleCategory(credit: TmdbCombinedCredit): RoleCategory {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function useTmdb(apiKey: Ref<string>) {
+export function useTmdb() {
   async function request<T>(path: string, params: Record<string, string> = {}): Promise<T> {
-    const url = new URL(TMDB_BASE + path);
-    url.searchParams.set('api_key', apiKey.value);
+    let url: URL;
+
+    if (import.meta.env.DEV) {
+      url = new URL(TMDB_BASE + path);
+      url.searchParams.set('api_key', import.meta.env.DEV_TMDB_API_KEY ?? '');
+    } else {
+      url = new URL(TMDB_PROXY, window.location.origin);
+      url.searchParams.set('path', path);
+    }
+
     for (const [k, value] of Object.entries(params)) {
       url.searchParams.set(k, value);
     }
@@ -71,7 +79,7 @@ export function useTmdb(apiKey: Ref<string>) {
   // ── Person search ───────────────────────────────────────────────────────────
 
   async function searchPeople(query: string): Promise<TmdbPerson[]> {
-    if (!query.trim() || !apiKey.value) {
+    if (!query.trim()) {
       return [];
     }
     const data = await request<{ results: TmdbPerson[] }>('/search/person', {
@@ -131,7 +139,7 @@ export function useTmdb(apiKey: Ref<string>) {
    * Results are filtered to movie/tv only and normalised to TmdbTitle.
    */
   async function searchTitles(query: string): Promise<TmdbTitle[]> {
-    if (!query.trim() || !apiKey.value) {
+    if (!query.trim()) {
       return [];
     }
     const data = await request<TmdbPagedResponse<TmdbMultiSearchResult>>('/search/multi', {
@@ -259,7 +267,7 @@ export function useTmdb(apiKey: Ref<string>) {
    * Returns a mixed array; callers use isPersonSlot() to discriminate.
    */
   async function searchAll(query: string): Promise<(TmdbPerson | TmdbTitle)[]> {
-    if (!query.trim() || !apiKey.value) {
+    if (!query.trim()) {
       return [];
     }
     const data = await request<TmdbPagedResponse<TmdbMultiSearchResult>>('/search/multi', {
