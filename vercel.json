@@ -6,14 +6,8 @@
   "rewrites": [
     {
       "source": "/",
-      "has": [
-        { "type": "query", "key": "mode" },
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(Discordbot|Twitterbot|facebookexternalhit|LinkedInBot|Slackbot|TelegramBot|WhatsApp|bot|Bot).*"
-        }
-      ],
+      "has": [{ "type": "query", "key": "mode" }],
+      "missing": [{ "type": "query", "key": "_" }],
       "destination": "/api/preview"
     }
   ]

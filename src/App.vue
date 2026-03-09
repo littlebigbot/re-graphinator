@@ -126,6 +126,7 @@ function pushPermalink(): void {
     params.set('mode', 'person');
     params.set('ids', activePeople.value.map((person) => person.id).join(','));
   }
+  params.set('_', '1');
   window.history.replaceState({}, '', `?${params.toString()}`);
 }
 

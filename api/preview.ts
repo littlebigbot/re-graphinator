@@ -64,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const redirectUrl = rawIds ? `${origin}/?mode=${mode}&ids=${encodeURIComponent(rawIds)}` : `${origin}/`;
+  const redirectUrl = rawIds ? `${origin}/?mode=${mode}&ids=${encodeURIComponent(rawIds)}&_=1` : `${origin}/`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">

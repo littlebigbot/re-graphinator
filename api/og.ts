@@ -175,7 +175,6 @@ function buildLayout(subjects: SubjectInfo[], mode: 'person' | 'title'): SatoriN
             gap: 28,
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1,
             marginBottom: 40,
             flexWrap: 'wrap',
             maxWidth: 1000,
@@ -185,7 +184,7 @@ function buildLayout(subjects: SubjectInfo[], mode: 'person' | 'title'): SatoriN
         )
       : el('div', { marginBottom: 40, display: 'flex' });
 
-  const wordmark = el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 1 }, [
+  const wordmark = el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }, [
     el(
       'span',
       {
