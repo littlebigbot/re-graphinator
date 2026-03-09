@@ -7,6 +7,7 @@ import { profileUrl, posterUrl } from '@/composables/useTmdb';
 import { useSearchDropdown } from '@/composables/useSearchDropdown';
 import { useClickOutside } from '@/composables/useClickOutside';
 import { itemLabel, itemBadge, mediaTypeLabel } from '@/utils/item';
+import { releaseYear } from '@/utils/date';
 
 const props = defineProps<{
   index: number;
@@ -73,66 +74,58 @@ function hideOnError(e: Event): void {
       <div class="search-input-wrap">
         <input v-model="query" type="text" class="slot-input" :placeholder="placeholder" autocomplete="off" />
         <div v-show="showDrop && dropdown.length" class="search-dropdown">
-          <div v-for="item in dropdown" :key="item.id" class="dropdown-item" @click="select(item)">
-            <!-- Person photo or title poster -->
-            <img
-              class="dropdown-item-thumb"
-              :class="isPersonSlot(item) ? 'thumb--person' : 'thumb--title'"
-              :src="isPersonSlot(item) ? profileUrl(item.profile_path) : posterUrl(item.poster_path)"
-              alt=""
-              @error="hideOnError"
-            />
-            <div class="dropdown-item-body">
-              <div class="dropdown-item-name">{{ item.name }}</div>
-              <div class="dropdown-item-sub">{{ itemLabel(item) }}</div>
-            </div>
-            <span v-if="itemBadge(item, searchMode)" class="dropdown-item-badge">{{
-              itemBadge(item, searchMode)
-            }}</span>
-          </div>
+          <DropdownItem
+            v-for="item in dropdown"
+            :key="item.id"
+            :thumbnail-src="isPersonSlot(item) ? profileUrl(item.profile_path) : posterUrl(item.poster_path)"
+            :thumb-class="isPersonSlot(item) ? 'thumb--person' : 'thumb--title'"
+            :name="item.name"
+            :sub-text="itemLabel(item)"
+            :badge="itemBadge(item, searchMode)"
+            :on-select="() => select(item)"
+            :on-error="hideOnError"
+          />
         </div>
       </div>
     </template>
 
     <!-- ── Selected: person card ── -->
-    <div v-else-if="isPersonSlot(modelValue)" class="person-card">
-      <img
-        class="person-card-photo"
-        :src="profileUrl(modelValue.profile_path)"
-        :alt="modelValue.name"
-        @error="hideOnError"
-      />
-      <div class="card-info">
-        <div class="card-name">{{ modelValue.name }}</div>
-        <div class="card-sub">{{ modelValue.known_for_department || 'Various roles' }}</div>
+    <CardLayout
+      v-if="isPersonSlot(modelValue)"
+      :thumbnail-src="profileUrl(modelValue.profile_path)"
+      :thumbnail-alt="modelValue.name"
+      :name="modelValue.name"
+      :sub-text="modelValue.known_for_department || 'Various roles'"
+      :on-clear="clear"
+      :on-error="hideOnError"
+    >
+      <template #extra-info>
         <div v-if="modelValue.known_for?.length" class="known-pills">
           <span v-for="k in modelValue.known_for.slice(0, 3)" :key="k.id" class="known-pill">{{
             k.title ?? k.name
           }}</span>
         </div>
         <div class="card-count">{{ creditsCount ? `${creditsCount} projects` : '—' }}</div>
-      </div>
-      <button class="card-clear" @click="clear">✕</button>
-    </div>
+      </template>
+    </CardLayout>
 
     <!-- ── Selected: title card ── -->
-    <div v-else class="title-card">
-      <img
-        class="title-card-poster"
-        :src="posterUrl((modelValue as TmdbTitle).poster_path)"
-        :alt="(modelValue as TmdbTitle).name"
-        @error="hideOnError"
-      />
-      <div class="card-info">
-        <div class="card-name">{{ (modelValue as TmdbTitle).name }}</div>
+    <CardLayout
+      v-else
+      :thumbnail-src="posterUrl((modelValue as TmdbTitle).poster_path)"
+      :thumbnail-alt="(modelValue as TmdbTitle).name"
+      :name="(modelValue as TmdbTitle).name"
+      :sub-text="releaseYear((modelValue as TmdbTitle).release_date)"
+      :on-clear="clear"
+      :on-error="hideOnError"
+    >
+      <template #extra-info>
         <div class="card-sub">
-          {{ releaseYear((modelValue as TmdbTitle).release_date) }}
           <span class="media-badge">{{ mediaTypeLabel((modelValue as TmdbTitle).media_type) }}</span>
         </div>
         <div class="card-count">{{ creditsCount ? `${creditsCount} cast/crew` : '—' }}</div>
-      </div>
-      <button class="card-clear" @click="clear">✕</button>
-    </div>
+      </template>
+    </CardLayout>
   </div>
 </template>
 
@@ -202,22 +195,25 @@ function hideOnError(e: Event): void {
   position: relative;
 }
 
-.person-card-photo {
-  width: 48px;
-  height: 70px;
-  border-radius: 6px;
+/* Shared thumbnail styles */
+.card-thumbnail {
   object-fit: cover;
   background: var(--surface3);
   flex-shrink: 0;
 }
 
+.person-card-photo {
+  composes: card-thumbnail;
+  width: 48px;
+  height: 70px;
+  border-radius: 6px;
+}
+
 .title-card-poster {
+  composes: card-thumbnail;
   width: 42px;
   height: 62px;
   border-radius: 4px;
-  object-fit: cover;
-  background: var(--surface3);
-  flex-shrink: 0;
 }
 
 .card-info {

@@ -7,62 +7,95 @@
   padding: 0;
 }
 
+/* ── Shared theme variables ──────────────────────────────────────────────── */
+:root {
+  --dark-bg: #04090a;
+  --dark-surface: #090f0d;
+  --dark-surface2: #0f1a16;
+  --dark-surface3: #172319;
+  --dark-accent: #6bff2a;
+  --dark-accent-dim: rgba(107, 255, 42, 0.1);
+  --dark-accent-glow: 0 0 18px rgba(107, 255, 42, 0.35);
+  --dark-blood: #d41c1c;
+  --dark-blood-dim: rgba(212, 28, 28, 0.12);
+  --dark-text: #ceebd4;
+  --dark-text-2: #5e9970;
+  --dark-text-3: #2f5c40;
+  --dark-border: rgba(107, 255, 42, 0.1);
+  --dark-shadow: 0 8px 32px rgba(0, 0, 0, 0.85);
+  --dark-r: 3px;
+
+  --light-bg: #f0f7f1;
+  --light-surface: #e6f0e7;
+  --light-surface2: #dce9de;
+  --light-surface3: #cfe0d0;
+  --light-accent: #1a9c00;
+  --light-accent-dim: rgba(26, 156, 0, 0.1);
+  --light-accent-glow: 0 0 12px rgba(26, 156, 0, 0.2);
+  --light-blood: #c00000;
+  --light-blood-dim: rgba(192, 0, 0, 0.08);
+  --light-text: #0c1c0e;
+  --light-text-2: #306b38;
+  --light-text-3: #6a9c72;
+  --light-border: rgba(0, 0, 0, 0.09);
+  --light-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
 /* ── Dark theme (default) ─────────────────────────────────────────────────── */
 :root {
-  --bg: #04090a;
-  --surface: #090f0d;
-  --surface2: #0f1a16;
-  --surface3: #172319;
-  --accent: #6bff2a;
-  --accent-dim: rgba(107, 255, 42, 0.1);
-  --accent-glow: 0 0 18px rgba(107, 255, 42, 0.35);
-  --blood: #d41c1c;
-  --blood-dim: rgba(212, 28, 28, 0.12);
-  --text: #ceebd4;
-  --text-2: #5e9970;
-  --text-3: #2f5c40;
-  --border: rgba(107, 255, 42, 0.1);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.85);
-  --r: 3px;
+  --bg: var(--dark-bg);
+  --surface: var(--dark-surface);
+  --surface2: var(--dark-surface2);
+  --surface3: var(--dark-surface3);
+  --accent: var(--dark-accent);
+  --accent-dim: var(--dark-accent-dim);
+  --accent-glow: var(--dark-accent-glow);
+  --blood: var(--dark-blood);
+  --blood-dim: var(--dark-blood-dim);
+  --text: var(--dark-text);
+  --text-2: var(--dark-text-2);
+  --text-3: var(--dark-text-3);
+  --border: var(--dark-border);
+  --shadow: var(--dark-shadow);
+  --r: var(--dark-r);
 }
 
 /* ── Light theme ──────────────────────────────────────────────────────────── */
-/* Applied when: OS prefers light AND user hasn't overridden, OR user set light */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
-    --bg: #f0f7f1;
-    --surface: #e6f0e7;
-    --surface2: #dce9de;
-    --surface3: #cfe0d0;
-    --accent: #1a9c00;
-    --accent-dim: rgba(26, 156, 0, 0.1);
-    --accent-glow: 0 0 12px rgba(26, 156, 0, 0.2);
-    --blood: #c00000;
-    --blood-dim: rgba(192, 0, 0, 0.08);
-    --text: #0c1c0e;
-    --text-2: #306b38;
-    --text-3: #6a9c72;
-    --border: rgba(0, 0, 0, 0.09);
-    --shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --bg: var(--light-bg);
+    --surface: var(--light-surface);
+    --surface2: var(--light-surface2);
+    --surface3: var(--light-surface3);
+    --accent: var(--light-accent);
+    --accent-dim: var(--light-accent-dim);
+    --accent-glow: var(--light-accent-glow);
+    --blood: var(--light-blood);
+    --blood-dim: var(--light-blood-dim);
+    --text: var(--light-text);
+    --text-2: var(--light-text-2);
+    --text-3: var(--light-text-3);
+    --border: var(--light-border);
+    --shadow: var(--light-shadow);
   }
 }
 
 /* Manual override always wins */
 [data-theme='light'] {
-  --bg: #f0f7f1;
-  --surface: #e6f0e7;
-  --surface2: #dce9de;
-  --surface3: #cfe0d0;
-  --accent: #1a9c00;
-  --accent-dim: rgba(26, 156, 0, 0.1);
-  --accent-glow: 0 0 12px rgba(26, 156, 0, 0.2);
-  --blood: #c00000;
-  --blood-dim: rgba(192, 0, 0, 0.08);
-  --text: #0c1c0e;
-  --text-2: #306b38;
-  --text-3: #6a9c72;
-  --border: rgba(0, 0, 0, 0.09);
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --bg: var(--light-bg);
+  --surface: var(--light-surface);
+  --surface2: var(--light-surface2);
+  --surface3: var(--light-surface3);
+  --accent: var(--light-accent);
+  --accent-dim: var(--light-accent-dim);
+  --accent-glow: var(--light-accent-glow);
+  --blood: var(--light-blood);
+  --blood-dim: var(--light-blood-dim);
+  --text: var(--light-text);
+  --text-2: var(--light-text-2);
+  --text-3: var(--light-text-3);
+  --border: var(--light-border);
+  --shadow: var(--light-shadow);
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */

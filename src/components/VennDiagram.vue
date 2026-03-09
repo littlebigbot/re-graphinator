@@ -92,7 +92,7 @@ function totalForSlot(i: number): number {
     <header>
       <div class="logo-row">
         <div class="logo">
-          <span class="logo-text">Re-Graphinator</span>
+          <span class="logo-text"> <span class="big-r">R</span>e-Graphinato<span class="big-r">R</span> </span>
           <span class="logo-sub">Filmography Overlap System</span>
         </div>
 
@@ -221,6 +221,11 @@ function totalForSlot(i: number): number {
   color: var(--accent);
   text-shadow: var(--accent-glow);
   font-style: italic;
+}
+
+.big-r {
+  font-size: 2.4rem;
+  vertical-align: top;
 }
 
 .logo-sub {
