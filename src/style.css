@@ -1,66 +1,73 @@
 /* ── Reset & base ─────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 /* ── Dark theme (default) ─────────────────────────────────────────────────── */
 :root {
-  --bg:           #04090a;
-  --surface:      #090f0d;
-  --surface2:     #0f1a16;
-  --surface3:     #172319;
-  --accent:       #6bff2a;
-  --accent-dim:   rgba(107, 255, 42, 0.10);
-  --accent-glow:  0 0 18px rgba(107, 255, 42, 0.35);
-  --blood:        #d41c1c;
-  --blood-dim:    rgba(212, 28, 28, 0.12);
-  --text:         #ceebd4;
-  --text-2:       #5e9970;
-  --text-3:       #2f5c40;
-  --border:       rgba(107, 255, 42, 0.10);
-  --shadow:       0 8px 32px rgba(0, 0, 0, 0.85);
-  --r:            3px;
+  --bg: #04090a;
+  --surface: #090f0d;
+  --surface2: #0f1a16;
+  --surface3: #172319;
+  --accent: #6bff2a;
+  --accent-dim: rgba(107, 255, 42, 0.1);
+  --accent-glow: 0 0 18px rgba(107, 255, 42, 0.35);
+  --blood: #d41c1c;
+  --blood-dim: rgba(212, 28, 28, 0.12);
+  --text: #ceebd4;
+  --text-2: #5e9970;
+  --text-3: #2f5c40;
+  --border: rgba(107, 255, 42, 0.1);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.85);
+  --r: 3px;
 }
 
 /* ── Light theme ──────────────────────────────────────────────────────────── */
 /* Applied when: OS prefers light AND user hasn't overridden, OR user set light */
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg:           #f0f7f1;
-    --surface:      #e6f0e7;
-    --surface2:     #dce9de;
-    --surface3:     #cfe0d0;
-    --accent:       #1a9c00;
-    --accent-dim:   rgba(26, 156, 0, 0.10);
-    --accent-glow:  0 0 12px rgba(26, 156, 0, 0.20);
-    --blood:        #c00000;
-    --blood-dim:    rgba(192, 0, 0, 0.08);
-    --text:         #0c1c0e;
-    --text-2:       #306b38;
-    --text-3:       #6a9c72;
-    --border:       rgba(0, 0, 0, 0.09);
-    --shadow:       0 4px 16px rgba(0, 0, 0, 0.12);
+  :root:not([data-theme='dark']) {
+    --bg: #f0f7f1;
+    --surface: #e6f0e7;
+    --surface2: #dce9de;
+    --surface3: #cfe0d0;
+    --accent: #1a9c00;
+    --accent-dim: rgba(26, 156, 0, 0.1);
+    --accent-glow: 0 0 12px rgba(26, 156, 0, 0.2);
+    --blood: #c00000;
+    --blood-dim: rgba(192, 0, 0, 0.08);
+    --text: #0c1c0e;
+    --text-2: #306b38;
+    --text-3: #6a9c72;
+    --border: rgba(0, 0, 0, 0.09);
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   }
 }
 
 /* Manual override always wins */
-[data-theme="light"] {
-  --bg:           #f0f7f1;
-  --surface:      #e6f0e7;
-  --surface2:     #dce9de;
-  --surface3:     #cfe0d0;
-  --accent:       #1a9c00;
-  --accent-dim:   rgba(26, 156, 0, 0.10);
-  --accent-glow:  0 0 12px rgba(26, 156, 0, 0.20);
-  --blood:        #c00000;
-  --blood-dim:    rgba(192, 0, 0, 0.08);
-  --text:         #0c1c0e;
-  --text-2:       #306b38;
-  --text-3:       #6a9c72;
-  --border:       rgba(0, 0, 0, 0.09);
-  --shadow:       0 4px 16px rgba(0, 0, 0, 0.12);
+[data-theme='light'] {
+  --bg: #f0f7f1;
+  --surface: #e6f0e7;
+  --surface2: #dce9de;
+  --surface3: #cfe0d0;
+  --accent: #1a9c00;
+  --accent-dim: rgba(26, 156, 0, 0.1);
+  --accent-glow: 0 0 12px rgba(26, 156, 0, 0.2);
+  --blood: #c00000;
+  --blood-dim: rgba(192, 0, 0, 0.08);
+  --text: #0c1c0e;
+  --text-2: #306b38;
+  --text-3: #6a9c72;
+  --border: rgba(0, 0, 0, 0.09);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
-html, body {
+html,
+body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
@@ -70,22 +77,39 @@ html, body {
 }
 
 /* ── Shared form elements ─────────────────────────────────────────────────── */
-button { font-family: inherit; cursor: pointer; }
-input  { font-family: inherit; }
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+input {
+  font-family: inherit;
+}
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 5px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 2px; }
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-3);
+  border-radius: 2px;
+}
 
 /* ── Spinner ──────────────────────────────────────────────────────────────── */
 .spinner {
   display: inline-block;
-  width: 30px; height: 30px;
+  width: 30px;
+  height: 30px;
   border: 2px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
   box-shadow: var(--accent-glow);
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

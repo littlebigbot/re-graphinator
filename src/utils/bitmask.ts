@@ -5,7 +5,13 @@
 
 /** Count the number of set bits (population count). */
 export function popcount(n: number): number {
-  let c = 0; let x = n; while (x) { c += x & 1; x >>>= 1 } return c
+  let count = 0;
+  let x = n;
+  while (x) {
+    count += x & 1;
+    x >>>= 1;
+  }
+  return count;
 }
 
 /**
@@ -13,7 +19,7 @@ export function popcount(n: number): number {
  * which would make the Venn diagram meaningless (need at least 2 circles).
  */
 export function isToggleDisabled(enabledMask: number, i: number): boolean {
-  return ((enabledMask >> i) & 1) === 1 && popcount(enabledMask) <= 2
+  return ((enabledMask >> i) & 1) === 1 && popcount(enabledMask) <= 2;
 }
 
 /**
@@ -21,5 +27,5 @@ export function isToggleDisabled(enabledMask: number, i: number): boolean {
  * e.g. activeBits(0b0101, 4) → [0, 2]
  */
 export function activeBits(mask: number, length: number): number[] {
-  return Array.from({ length }, (_, i) => i).filter(i => (mask >> i) & 1)
+  return Array.from({ length }, (_, i) => i).filter((i) => (mask >> i) & 1);
 }

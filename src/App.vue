@@ -1,165 +1,196 @@
 <script setup lang="ts">
-import { ref, computed, provide } from 'vue'
-import type { TmdbPerson, TmdbTitle, ProjectWithRoles, CastMemberInRegion, RegionMask, MediaFilter, SortBy, CastSortBy } from '@/types/tmdb'
-import type { HistoryEntry } from '@/composables/useHistory'
-import { PERSON_COLORS, ALL_ROLE_CATS } from '@/types/tmdb'
-import { useTheme }     from '@/composables/useTheme'
-import { useCredits }   from '@/composables/useCredits'
-import { useVennState } from '@/composables/useVennState'
-import { useHistory }   from '@/composables/useHistory'
-import { surname }    from '@/utils/names'
-import VennDiagram    from '@/components/VennDiagram.vue'
-import MovieGrid      from '@/components/MovieGrid.vue'
-import CastGrid       from '@/components/CastGrid.vue'
-import SearchHistory  from '@/components/SearchHistory.vue'
-import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue'
-import DebugPanel     from '@/components/DebugPanel.vue'
+import { ref, computed, provide } from 'vue';
+import type {
+  TmdbPerson,
+  TmdbTitle,
+  ProjectWithRoles,
+  CastMemberInRegion,
+  RegionMask,
+  MediaFilter,
+  SortBy,
+  CastSortBy,
+} from '@/types/tmdb';
+import type { HistoryEntry } from '@/composables/useHistory';
+import { PERSON_COLORS, ALL_ROLE_CATS } from '@/types/tmdb';
+import { useTheme } from '@/composables/useTheme';
+import { useCredits } from '@/composables/useCredits';
+import { useVennState } from '@/composables/useVennState';
+import { useHistory } from '@/composables/useHistory';
+import { surname } from '@/utils/names';
+import { projectComparator, castComparator } from '@/utils/sort';
+import VennDiagram from '@/components/VennDiagram.vue';
+import MovieGrid from '@/components/MovieGrid.vue';
+import CastGrid from '@/components/CastGrid.vue';
+import SearchHistory from '@/components/SearchHistory.vue';
+import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue';
+import DebugPanel from '@/components/DebugPanel.vue';
 
 // ── Root-level singletons ─────────────────────────────────────────────────────
-useTheme()
+useTheme();
 
-const apiKey = ref(import.meta.env.VITE_TMDB_API_KEY ?? '')
-provide('apiKey', apiKey)
+const apiKey = ref(import.meta.env.VITE_TMDB_API_KEY ?? '');
+provide('apiKey', apiKey);
 
-const { isLoading, getCached, fetchAll, fetchAllCast } = useCredits(apiKey)
-const { savePerson: savePersonHistory, saveTitle: saveTitleHistory } = useHistory()
-const historyRef = ref<InstanceType<typeof SearchHistory> | null>(null)
+const { isLoading, getCached, fetchAll, fetchAllCast } = useCredits(apiKey);
+const { savePerson: savePersonHistory, saveTitle: saveTitleHistory } = useHistory();
+const historyRef = ref<InstanceType<typeof SearchHistory> | null>(null);
 
 // ── Venn state ────────────────────────────────────────────────────────────────
 const {
-  slots, credits, castLists, personRoleFilters, hasResults, selectedMask, enabledMask,
-  allMask, activePeople, activeTitles, selfEnabled, personRoleCounts,
-  filteredCredits, filteredCastLists, regions, titleRegions, searchMode,
-  addSlot, removeSlot, removeSlotAt, compactSlots, handleSlotUpdate, clearSearch,
-  updateRoleFilter, toggleSelf, setSlots,
-  defaultSelfEnabled, toggleDefaultSelf,
-  applyPersonResults, applyTitleResults,
-} = useVennState()
+  slots,
+  credits,
+  castLists,
+  personRoleFilters,
+  hasResults,
+  selectedMask,
+  enabledMask,
+  allMask,
+  activePeople,
+  activeTitles,
+  selfEnabled,
+  personRoleCounts,
+  filteredCredits,
+  filteredCastLists,
+  regions,
+  titleRegions,
+  searchMode,
+  addSlot,
+  removeSlot,
+  removeSlotAt,
+  compactSlots,
+  handleSlotUpdate,
+  clearSearch,
+  updateRoleFilter,
+  toggleSelf,
+  setSlots,
+  defaultSelfEnabled,
+  toggleDefaultSelf,
+  applyPersonResults,
+  applyTitleResults,
+} = useVennState();
 
 // ── Grid display state (concerns the grid, not the Venn diagram) ──────────────
-const activeType  = ref<MediaFilter>('all')
-const sortBy      = ref<SortBy>('popularity')
-const castSortBy  = ref<CastSortBy>('popularity')
+const activeType = ref<MediaFilter>('all');
+const sortBy = ref<SortBy>('popularity');
+const castSortBy = ref<CastSortBy>('popularity');
 
 const typeFilters: { label: string; value: MediaFilter }[] = [
-  { label: 'All',   value: 'all' },
+  { label: 'All', value: 'all' },
   { label: 'Films', value: 'movie' },
-  { label: 'TV',    value: 'tv' },
-]
+  { label: 'TV', value: 'tv' },
+];
 
 // regionCounts bridges Venn state to the canvas — works for both modes.
 // In title mode the type filter is irrelevant so we just use raw item count.
 const regionCounts = computed<Map<RegionMask, number>>(() => {
-  const m = new Map<RegionMask, number>()
-  const source = searchMode.value === 'title' ? titleRegions.value : regions.value
+  const regionMap = new Map<RegionMask, number>();
+  const source = searchMode.value === 'title' ? titleRegions.value : regions.value;
   for (const [mask, items] of source) {
-    const count = searchMode.value === 'title' || activeType.value === 'all'
-      ? items.length
-      : (items as ProjectWithRoles[]).filter(p => p.media_type === activeType.value).length
-    m.set(mask, count)
+    const count =
+      searchMode.value === 'title' || activeType.value === 'all'
+        ? items.length
+        : (items as ProjectWithRoles[]).filter((project) => project.media_type === activeType.value).length;
+    regionMap.set(mask, count);
   }
-  return m
-})
+  return regionMap;
+});
 
 // ── Person-mode display items ──────────────────────────────────────────────────
 const displayItems = computed<ProjectWithRoles[]>(() => {
-  if (searchMode.value === 'title') return []
-  const mask = selectedMask.value > 0 ? selectedMask.value : allMask.value
-  const raw: ProjectWithRoles[] = []
-  for (const [regionMask, items] of regions.value) {
-    if ((regionMask & mask) === mask) raw.push(...items)
+  if (searchMode.value === 'title') {
+    return [];
   }
-  const filtered = activeType.value === 'all'
-    ? raw
-    : raw.filter(p => p.media_type === activeType.value)
-
-  return filtered.sort((a, b) => {
-    switch (sortBy.value) {
-      case 'popularity':  return (b.popularity  ?? 0) - (a.popularity  ?? 0)
-      case 'date-desc':   return (b.release_date ?? '').localeCompare(a.release_date ?? '')
-      case 'date-asc':    return (a.release_date ?? '').localeCompare(b.release_date ?? '')
-      case 'rating-desc': return (b.vote_average ?? 0) - (a.vote_average ?? 0)
-      case 'alpha':       return (a.title ?? '').localeCompare(b.title ?? '')
-      default:            return 0
+  const mask = selectedMask.value > 0 ? selectedMask.value : allMask.value;
+  const raw: ProjectWithRoles[] = [];
+  for (const [regionMask, items] of regions.value) {
+    if ((regionMask & mask) === mask) {
+      raw.push(...items);
     }
-  })
-})
+  }
+  const filtered = activeType.value === 'all' ? raw : raw.filter((project) => project.media_type === activeType.value);
+
+  return filtered.sort(projectComparator(sortBy.value));
+});
 
 // ── Title-mode display items ───────────────────────────────────────────────────
 const displayCastItems = computed<CastMemberInRegion[]>(() => {
-  if (searchMode.value !== 'title') return []
-  const mask = selectedMask.value > 0 ? selectedMask.value : allMask.value
-  const raw: CastMemberInRegion[] = []
-  for (const [regionMask, items] of titleRegions.value) {
-    if ((regionMask & mask) === mask) raw.push(...items)
+  if (searchMode.value !== 'title') {
+    return [];
   }
-  return raw.sort((a, b) => {
-    switch (castSortBy.value) {
-      case 'popularity': return (b.popularity ?? 0) - (a.popularity ?? 0)
-      case 'roles':      return Object.values(b.rolesBySlot).flat().length - Object.values(a.rolesBySlot).flat().length
-      default:           return a.name.localeCompare(b.name)
+  const mask = selectedMask.value > 0 ? selectedMask.value : allMask.value;
+  const raw: CastMemberInRegion[] = [];
+  for (const [regionMask, items] of titleRegions.value) {
+    if ((regionMask & mask) === mask) {
+      raw.push(...items);
     }
-  })
-})
+  }
+  return raw.sort(castComparator(castSortBy.value));
+});
 
 // ── Orchestration (wires useCredits ↔ useVennState ↔ useHistory) ──────────────
 async function runCompare(): Promise<void> {
-  if (!apiKey.value) return
-  compactSlots()            // strip any unfilled null slots before comparing
-  hasResults.value = false
+  if (!apiKey.value) {
+    return;
+  }
+  compactSlots(); // strip any unfilled null slots before comparing
+  hasResults.value = false;
   try {
     if (searchMode.value === 'title') {
-      if (activeTitles.value.length < 2) return
-      applyTitleResults(await fetchAllCast(activeTitles.value))
-      saveTitleHistory(activeTitles.value)
-      historyRef.value?.refresh()
+      if (activeTitles.value.length < 2) {
+        return;
+      }
+      applyTitleResults(await fetchAllCast(activeTitles.value));
+      saveTitleHistory(activeTitles.value);
+      historyRef.value?.refresh();
     } else {
-      if (activePeople.value.length < 2) return
-      applyPersonResults(await fetchAll(activePeople.value))
-      savePersonHistory(activePeople.value)
-      historyRef.value?.refresh()
+      if (activePeople.value.length < 2) {
+        return;
+      }
+      applyPersonResults(await fetchAll(activePeople.value));
+      savePersonHistory(activePeople.value);
+      historyRef.value?.refresh();
     }
   } catch (err) {
-    alert(`Error fetching data: ${err instanceof Error ? err.message : String(err)}`)
+    alert(`Error fetching data: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
 function startWithTitle(item: ProjectWithRoles): void {
-  clearSearch()
+  clearSearch();
   const title: TmdbTitle = {
-    id:           item.id,
-    name:         item.title,
-    media_type:   item.media_type,
-    poster_path:  item.poster_path,
+    id: item.id,
+    name: item.title,
+    media_type: item.media_type,
+    poster_path: item.poster_path,
     release_date: item.release_date,
     vote_average: item.vote_average,
-  }
-  handleSlotUpdate(0, title)
+  };
+  handleSlotUpdate(0, title);
 }
 
 function startWithPerson(member: CastMemberInRegion): void {
-  clearSearch()
+  clearSearch();
   const person: TmdbPerson = {
-    id:                   member.id,
-    name:                 member.name,
-    profile_path:         member.profile_path,
+    id: member.id,
+    name: member.name,
+    profile_path: member.profile_path,
     known_for_department: member.known_for_department ?? 'Acting',
-    known_for:            [],
-  }
-  handleSlotUpdate(0, person)
+    known_for: [],
+  };
+  handleSlotUpdate(0, person);
 }
 
 async function restoreSearch(entry: HistoryEntry): Promise<void> {
   if (entry.mode === 'title') {
-    setSlots(entry.titles)
-    await runCompare()
+    setSlots(entry.titles);
+    await runCompare();
   } else {
-    setSlots(entry.persons)
-    const cached = getCached(entry.persons)
+    setSlots(entry.persons);
+    const cached = getCached(entry.persons);
     if (cached) {
-      applyPersonResults(cached)
+      applyPersonResults(cached);
     } else {
-      await runCompare()
+      await runCompare();
     }
   }
 }
@@ -171,7 +202,6 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
   <SearchHistory ref="historyRef" @restore="restoreSearch" />
 
   <main class="main">
-
     <VennDiagram
       :slots="slots"
       :search-mode="searchMode"
@@ -199,7 +229,6 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
     />
 
     <template v-if="hasResults">
-
       <!-- Person-mode controls: filters left, sort right -->
       <div v-if="searchMode !== 'title'" class="grid-controls">
         <div class="controls-left">
@@ -209,12 +238,10 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
             class="filter-btn"
             :class="{ active: activeType === f.value }"
             @click="activeType = f.value"
-          >{{ f.label }}</button>
-          <span
-            v-for="(p, i) in activePeople"
-            :key="i"
-            class="person-filter"
           >
+            {{ f.label }}
+          </button>
+          <span v-for="(p, i) in activePeople" :key="i" class="person-filter">
             <span class="person-filter-name" :style="`color: ${PERSON_COLORS[i]}`">
               {{ surname(p.name) }}
             </span>
@@ -254,15 +281,13 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
       <CastGrid
         v-else
         :items="displayCastItems"
-        :titles="(slots as TmdbTitle[])"
+        :titles="slots as TmdbTitle[]"
         :selected-mask="selectedMask"
         :sort-by="castSortBy"
         @update:sort-by="castSortBy = $event"
         @compare-with="startWithPerson"
       />
-
     </template>
-
   </main>
 
   <DebugPanel :data="{ slots, credits, castLists, searchMode }" />
@@ -325,7 +350,10 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
   transition: all 0.15s;
 }
 
-.filter-btn:hover { background: var(--surface2); color: var(--text); }
+.filter-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
 .filter-btn.active {
   background: var(--accent-dim);
   border-color: rgba(107, 255, 42, 0.3);
@@ -333,6 +361,8 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
 }
 
 @media (max-width: 640px) {
-  .main { padding: 20px 16px; }
+  .main {
+    padding: 20px 16px;
+  }
 }
 </style>

@@ -1,84 +1,89 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { TmdbPerson, TmdbTitle, CastMember, Project, RegionMask, RoleCategory, SearchMode } from '@/types/tmdb'
-import { PERSON_COLORS, ALL_ROLE_CATS, EMPTY_ROLE_COUNTS } from '@/types/tmdb'
-import { VENN_LAYOUTS, slotLabelCenter, slotLabelBelow } from '@/utils/vennLayout'
-import { MIN_PERSONS } from '@/composables/useVennState'
-import { useClickOutside } from '@/composables/useClickOutside'
-import PersonCards from '@/components/PersonCards.vue'
-import VennCanvas from '@/components/VennCanvas.vue'
-import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue'
-import { IconGear } from '@/components/icons'
+import { computed, ref } from 'vue';
+import type { TmdbPerson, TmdbTitle, CastMember, Project, RegionMask, RoleCategory, SearchMode } from '@/types/tmdb';
+import { PERSON_COLORS, ALL_ROLE_CATS, EMPTY_ROLE_COUNTS } from '@/types/tmdb';
+import { VENN_LAYOUTS, slotPosition } from '@/utils/vennLayout';
+import { MIN_PERSONS } from '@/composables/useVennState';
+import { useClickOutside } from '@/composables/useClickOutside';
+import PersonCards from '@/components/PersonCards.vue';
+import VennCanvas from '@/components/VennCanvas.vue';
+import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue';
+import { IconGear } from '@/components/icons';
 
 const props = defineProps<{
-  slots: (TmdbPerson | TmdbTitle | null)[]
-  searchMode: SearchMode | null
-  hasResults: boolean
-  isLoading: boolean
-  regionCounts: Map<RegionMask, number>
-  enabledMask: number
-  selectedMask: RegionMask
-  personRoleFilters: RoleCategory[][]
-  personRoleCounts: Array<Record<RoleCategory, number>>
-  selfEnabled: boolean
-  defaultSelfEnabled: boolean
-  credits: Project[][]
-  castLists: CastMember[][]
-}>()
+  slots: (TmdbPerson | TmdbTitle | null)[];
+  searchMode: SearchMode | null;
+  hasResults: boolean;
+  isLoading: boolean;
+  regionCounts: Map<RegionMask, number>;
+  enabledMask: number;
+  selectedMask: RegionMask;
+  personRoleFilters: RoleCategory[][];
+  personRoleCounts: Array<Record<RoleCategory, number>>;
+  selfEnabled: boolean;
+  defaultSelfEnabled: boolean;
+  credits: Project[][];
+  castLists: CastMember[][];
+}>();
 
 const emit = defineEmits<{
-  'update:slot': [idx: number, val: TmdbPerson | TmdbTitle | null]
-  'clear-slot': [idx: number]
-  'update-role-filter': [idx: number, cats: RoleCategory[]]
-  select: [mask: RegionMask]
-  'toggle-self': []
-  'toggle-default-self': []
-  'add-slot': []
-  'remove-slot': []
-  'run-compare': []
-  'clear-search': []
-}>()
+  'update:slot': [idx: number, val: TmdbPerson | TmdbTitle | null];
+  'clear-slot': [idx: number];
+  'update-role-filter': [idx: number, categories: RoleCategory[]];
+  select: [mask: RegionMask];
+  'toggle-self': [];
+  'toggle-default-self': [];
+  'add-slot': [];
+  'remove-slot': [];
+  'run-compare': [];
+  'clear-search': [];
+}>();
 
 // ── Config dropdown ───────────────────────────────────────────────────────────
-const configOpen = ref(false)
-const configBtnRef = ref<HTMLElement | null>(null)
-const configPanelRef = ref<HTMLElement | null>(null)
+const configOpen = ref(false);
+const configBtnRef = ref<HTMLElement | null>(null);
+const configPanelRef = ref<HTMLElement | null>(null);
 
 useClickOutside([configBtnRef, configPanelRef], () => {
-  configOpen.value = false
-})
+  configOpen.value = false;
+});
 
 // ── Layout / geometry ─────────────────────────────────────────────────────────
 // Mirrors VennCanvas: filled slots, minimum 2.
-const displayCount = computed(() => Math.max(props.slots.filter((s) => s !== null).length, 2))
-const stageLayout = computed(() => VENN_LAYOUTS[displayCount.value] ?? VENN_LAYOUTS[2])
+const displayCount = computed(() => Math.max(props.slots.filter((slot) => slot !== null).length, 2));
+const stageLayout = computed(() => VENN_LAYOUTS[displayCount.value] ?? VENN_LAYOUTS[2]);
 
 /** CSS for the role-filter dropdown: anchored just below the slot's name label. */
 function roleFilterStyle(i: number): Record<string, string> {
-  const { pctLeft, pctTop } = slotLabelBelow(displayCount.value, i)
-  return { position: 'absolute', left: `${pctLeft}%`, top: `${pctTop}%`, transform: 'translateX(-50%)' }
+  const { pctLeft, pctTop } = slotPosition(displayCount.value, i, { y: 'below' });
+  return { position: 'absolute', left: `${pctLeft}%`, top: `${pctTop}%`, transform: 'translateX(-50%)' };
 }
 
 /** CSS for the hover-remove overlay: centred on the slot's name label. */
-function labelOverlayStyle(i: number): Record<string, string> {
-  const { pctLeft, pctTop } = slotLabelCenter(displayCount.value, i)
-  return { position: 'absolute', left: `${pctLeft}%`, top: `${pctTop}%`, transform: 'translate(-50%, -50%)' }
-}
+
+// function labelOverlayStyle(i: number): Record<string, string> {
+//   const { pctLeft, pctTop } = slotPosition(displayCount.value, i, { x: 'left' });
+//   return { position: 'absolute', left: `${pctLeft}%`, top: `${pctTop}%`, transform: 'translate(-50%, -50%)' };
+// }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 /** Compare button is enabled once at least 2 slots are filled. */
-const canCompare = computed(() => props.slots.filter((s) => s !== null).length >= MIN_PERSONS)
+const canCompare = computed(() => props.slots.filter((slot) => slot !== null).length >= MIN_PERSONS);
 
-const emptyRoleCounts = EMPTY_ROLE_COUNTS
+const emptyRoleCounts = EMPTY_ROLE_COUNTS;
 
 /** Inclusive credit total for slot i across all visible regions. */
 function totalForSlot(i: number): number {
-  if (!props.hasResults) return 0
-  let total = 0
-  for (const [m, cnt] of props.regionCounts) {
-    if ((m >> i) & 1) total += cnt
+  if (!props.hasResults) {
+    return 0;
   }
-  return total
+  let total = 0;
+  for (const [regionMask, cnt] of props.regionCounts) {
+    if ((regionMask >> i) & 1) {
+      total += cnt;
+    }
+  }
+  return total;
 }
 </script>
 
@@ -160,11 +165,11 @@ function totalForSlot(i: number): number {
       </Transition>
 
       <!-- ── Hover-remove zones — one per filled slot, centred on its name label ── -->
-      <template v-for="(slot, i) in slots" :key="`lhz-${i}`">
+      <!-- <template v-for="(slot, i) in slots" :key="`lhz-${i}`">
         <div v-if="slot !== null" class="label-hover-zone" :style="labelOverlayStyle(i)">
           <button class="label-remove-btn" title="Remove" @click="emit('clear-slot', i)">✕</button>
         </div>
-      </template>
+      </template> -->
 
       <!-- ── Role filter dropdowns — post-compare, person mode only ── -->
       <template v-if="hasResults && searchMode === 'person'">

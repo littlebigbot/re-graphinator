@@ -1,28 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import JsonTree from '@/components/JsonTree.vue'
+import { ref } from 'vue';
+import JsonTree from '@/components/JsonTree.vue';
 
 const props = defineProps<{
-  data: unknown
-}>()
+  data: unknown;
+}>();
 
-const open = ref(false)
+const open = ref(false);
 
 function copyJson(): void {
-  navigator.clipboard.writeText(JSON.stringify(props.data, null, 2))
-    .catch(() => {/* ignore */})
+  navigator.clipboard.writeText(JSON.stringify(props.data, null, 2)).catch(() => {
+    /* ignore */
+  });
 }
 </script>
 
 <template>
   <div class="dbg-root">
     <!-- Floating action button -->
-    <button
-      class="dbg-fab"
-      :class="{ 'dbg-fab--open': open }"
-      title="Debug panel"
-      @click="open = !open"
-    >{ }</button>
+    <button class="dbg-fab" :class="{ 'dbg-fab--open': open }" title="Debug panel" @click="open = !open">{ }</button>
 
     <!-- Panel -->
     <Transition name="dbg-slide">
@@ -146,7 +142,9 @@ function copyJson(): void {
 /* ── Slide-up transition ── */
 .dbg-slide-enter-active,
 .dbg-slide-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .dbg-slide-enter-from,
 .dbg-slide-leave-to {

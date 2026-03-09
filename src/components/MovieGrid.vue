@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { ProjectWithRoles, TmdbPerson, RegionMask } from '@/types/tmdb'
-import MovieCard from './MovieCard.vue'
+import type { ProjectWithRoles, TmdbPerson, RegionMask } from '@/types/tmdb';
+import MovieCard from './MovieCard.vue';
 
 defineProps<{
-  items:        ProjectWithRoles[]
-  persons:      TmdbPerson[]
-  selectedMask: RegionMask
-}>()
+  items: ProjectWithRoles[];
+  persons: TmdbPerson[];
+  selectedMask: RegionMask;
+}>();
 
 const emit = defineEmits<{
-  'compare-with': [item: ProjectWithRoles]
-}>()
+  'compare-with': [item: ProjectWithRoles];
+}>();
 </script>
 
 <template>
@@ -47,7 +47,6 @@ const emit = defineEmits<{
   color: var(--text-3);
 }
 
-
 .scroll-area {
   max-height: 640px;
   overflow-y: auto;
@@ -60,5 +59,9 @@ const emit = defineEmits<{
   gap: 14px;
 }
 
-.no-results { padding: 24px; color: var(--text-3); font-size: 0.85rem; }
+.no-results {
+  padding: 24px;
+  color: var(--text-3);
+  font-size: 0.85rem;
+}
 </style>

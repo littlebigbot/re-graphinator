@@ -1,49 +1,54 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { RoleCategory } from '@/types/tmdb'
-import { ALL_ROLE_CATS, ROLE_LABELS } from '@/types/tmdb'
-import { IconCaret, IconCheck } from '@/components/icons'
-import { useClickOutside } from '@/composables/useClickOutside'
+import { ref, computed } from 'vue';
+import type { RoleCategory } from '@/types/tmdb';
+import { ALL_ROLE_CATS, ROLE_LABELS } from '@/types/tmdb';
+import { IconCaret, IconCheck } from '@/components/icons';
+import { useClickOutside } from '@/composables/useClickOutside';
 
 const props = defineProps<{
-  modelValue:  RoleCategory[]
-  counts:      Record<RoleCategory, number>
-  color?:      string
-  numberMode?: boolean   // compact number trigger instead of label
-  totalCount?: number    // used in numberMode as the displayed count
-}>()
+  modelValue: RoleCategory[];
+  counts: Record<RoleCategory, number>;
+  color?: string;
+  numberMode?: boolean; // compact number trigger instead of label
+  totalCount?: number; // used in numberMode as the displayed count
+}>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: RoleCategory[]]
-}>()
+  'update:modelValue': [value: RoleCategory[]];
+}>();
 
-const open = ref(false)
-const root = ref<HTMLElement | null>(null)
-useClickOutside([root], () => { open.value = false })
+const open = ref(false);
+const root = ref<HTMLElement | null>(null);
+useClickOutside([root], () => {
+  open.value = false;
+});
 
-const allSelected = computed(() => props.modelValue.length === ALL_ROLE_CATS.length)
+const allSelected = computed(() => props.modelValue.length === ALL_ROLE_CATS.length);
 
 const triggerLabel = computed(() => {
-  if (allSelected.value) return 'All roles'
-  return props.modelValue.map(c => ROLE_LABELS[c]).join(', ')
-})
+  if (allSelected.value) {
+    return 'All roles';
+  }
+  return props.modelValue.map((category) => ROLE_LABELS[category]).join(', ');
+});
 
 // Only show categories that have at least 1 credit, unless they're actively selected
-const visibleCats = computed(() =>
-  ALL_ROLE_CATS.filter(c => props.counts[c] > 0 || props.modelValue.includes(c))
-)
+const visibleCategories = computed(() =>
+  ALL_ROLE_CATS.filter((category) => props.counts[category] > 0 || props.modelValue.includes(category)),
+);
 
-function toggle(cat: RoleCategory) {
-  const current = props.modelValue
-  const has = current.includes(cat)
-  if (has && current.length === 1) return // must keep at least one
-  emit('update:modelValue', has ? current.filter(c => c !== cat) : [...current, cat])
+function toggle(category: RoleCategory) {
+  const current = props.modelValue;
+  const has = current.includes(category);
+  if (has && current.length === 1) {
+    return;
+  } // must keep at least one
+  emit('update:modelValue', has ? current.filter((cat) => cat !== category) : [...current, category]);
 }
 
 function selectAll() {
-  emit('update:modelValue', [...ALL_ROLE_CATS])
+  emit('update:modelValue', [...ALL_ROLE_CATS]);
 }
-
 </script>
 
 <template>
@@ -51,9 +56,9 @@ function selectAll() {
     <button
       class="dd-trigger"
       :class="{
-        'dd-trigger--open':     open,
+        'dd-trigger--open': open,
         'dd-trigger--filtered': !allSelected,
-        'dd-trigger--number':   numberMode,
+        'dd-trigger--number': numberMode,
       }"
       @click="open = !open"
     >
@@ -74,20 +79,20 @@ function selectAll() {
       <div v-if="open" class="dd-panel">
         <ul class="dd-list">
           <li
-            v-for="cat in visibleCats"
-            :key="cat"
+            v-for="category in visibleCategories"
+            :key="category"
             class="dd-item"
             :class="{
-              'dd-item--checked': modelValue.includes(cat),
-              'dd-item--zero': counts[cat] === 0,
+              'dd-item--checked': modelValue.includes(category),
+              'dd-item--zero': counts[category] === 0,
             }"
-            @click="toggle(cat)"
+            @click="toggle(category)"
           >
             <span class="dd-check">
-              <IconCheck v-if="modelValue.includes(cat)" />
+              <IconCheck v-if="modelValue.includes(category)" />
             </span>
-            <span class="dd-cat-label">{{ ROLE_LABELS[cat] }}</span>
-            <span class="dd-count">{{ counts[cat] ?? 0 }}</span>
+            <span class="dd-cat-label">{{ ROLE_LABELS[category] }}</span>
+            <span class="dd-count">{{ counts[category] ?? 0 }}</span>
           </li>
         </ul>
         <div v-if="!allSelected" class="dd-footer">
@@ -117,7 +122,10 @@ function selectAll() {
   color: var(--text-3);
   font-size: 0.73rem;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
   white-space: nowrap;
   max-width: 180px;
 }
@@ -167,7 +175,7 @@ function selectAll() {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 9px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
   z-index: 400;
   overflow: hidden;
 }
@@ -206,7 +214,9 @@ function selectAll() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
 }
 
 .dd-item--checked .dd-check {
@@ -300,7 +310,9 @@ function selectAll() {
 /* ── Transition ── */
 .dd-enter-active,
 .dd-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 .dd-enter-from,
 .dd-leave-to {

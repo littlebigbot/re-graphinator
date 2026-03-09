@@ -1,47 +1,42 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { ProjectWithRoles, TmdbPerson, RegionMask } from '@/types/tmdb'
-import { PERSON_COLORS } from '@/types/tmdb'
-import { posterUrl, tmdbUrl } from '@/composables/useTmdb'
-import { surname } from '@/utils/names'
-import { releaseYear } from '@/utils/date'
-import { activeBits } from '@/utils/bitmask'
-import { IconExternalLink, IconTv, IconFilm } from '@/components/icons'
+import { ref, computed } from 'vue';
+import type { ProjectWithRoles, TmdbPerson, RegionMask } from '@/types/tmdb';
+import { PERSON_COLORS } from '@/types/tmdb';
+import { posterUrl, tmdbUrl } from '@/composables/useTmdb';
+import { surname } from '@/utils/names';
+import { releaseYear } from '@/utils/date';
+import { activeBits } from '@/utils/bitmask';
+import { IconExternalLink, IconTv, IconFilm } from '@/components/icons';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 
 const props = defineProps<{
-  item:         ProjectWithRoles
-  persons:      TmdbPerson[]
-  selectedMask: RegionMask
-}>()
+  item: ProjectWithRoles;
+  persons: TmdbPerson[];
+  selectedMask: RegionMask;
+}>();
 
-const emit = defineEmits<{ 'compare-with': [item: ProjectWithRoles] }>()
+const emit = defineEmits<{ 'compare-with': [item: ProjectWithRoles] }>();
 
-const confirming = ref(false)
+const confirming = ref(false);
 
-const year      = computed(() => releaseYear(props.item.release_date, '—'))
-const href      = computed(() => tmdbUrl(props.item.media_type, props.item.id))
-const poster    = computed(() => posterUrl(props.item.poster_path))
-const isTV      = computed(() => props.item.media_type === 'tv')
+const year = computed(() => releaseYear(props.item.release_date, '—'));
+const href = computed(() => tmdbUrl(props.item.media_type, props.item.id));
+const poster = computed(() => posterUrl(props.item.poster_path));
+const isTV = computed(() => props.item.media_type === 'tv');
 
 const activePeople = computed(() =>
-  activeBits(props.selectedMask, props.persons.length).map(i => ({ p: props.persons[i], i }))
-)
+  activeBits(props.selectedMask, props.persons.length).map((i) => ({ p: props.persons[i], i })),
+);
 
 function rolesStr(roles: string[]): string {
-  return roles.join(', ') || '—'
+  return roles.join(', ') || '—';
 }
 </script>
 
 <template>
   <div class="movie-card" @click="confirming = !confirming">
     <div class="poster-wrap">
-      <img
-        v-if="poster"
-        class="movie-poster"
-        :src="poster"
-        :alt="item.title"
-        loading="lazy"
-      >
+      <img v-if="poster" class="movie-poster" :src="poster" :alt="item.title" loading="lazy" />
       <div v-else class="movie-poster-placeholder">🎬</div>
 
       <!-- Title overlay — visible on hover -->
@@ -60,9 +55,7 @@ function rolesStr(roles: string[]): string {
     <div class="movie-body">
       <div v-if="activePeople.length > 1" class="movie-roles">
         <span v-for="{ p, i } in activePeople" :key="i" class="role-line">
-          <span class="role-name" :style="`color: ${PERSON_COLORS[i]}`">
-            {{ surname(p.name) }}
-          </span>:
+          <span class="role-name" :style="`color: ${PERSON_COLORS[i]}`"> {{ surname(p.name) }} </span>:
           {{ rolesStr(item.rolesByPerson[i] ?? []) }}
         </span>
       </div>
@@ -71,40 +64,21 @@ function rolesStr(roles: string[]): string {
       </div>
 
       <!-- TMDB external link — absolute bottom-right -->
-      <a
-        class="tmdb-link"
-        :href="href"
-        target="_blank"
-        rel="noopener noreferrer"
-        title="View on TMDB"
-        @click.stop
-      >
+      <a class="tmdb-link" :href="href" target="_blank" rel="noopener noreferrer" title="View on TMDB" @click.stop>
         <IconExternalLink />
       </a>
     </div>
 
     <!-- Confirm inset -->
-    <Transition name="confirm">
-      <div
-        v-if="confirming"
-        class="confirm-overlay"
-        @click.self="confirming = false"
-      >
-        <div class="confirm-box">
-          <p class="confirm-prompt">Compare from<br><strong>{{ item.title }}</strong>?</p>
-          <div class="confirm-btns">
-            <button
-              class="confirm-yes"
-              @click.stop="emit('compare-with', item); confirming = false"
-            >Start</button>
-            <button
-              class="confirm-no"
-              @click.stop="confirming = false"
-            >Cancel</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
+    <ConfirmDialog
+      :show="confirming"
+      :name="item.title"
+      @confirm="
+        emit('compare-with', item);
+        confirming = false;
+      "
+      @cancel="confirming = false"
+    />
   </div>
 </template>
 
@@ -119,11 +93,13 @@ function rolesStr(roles: string[]): string {
   overflow: hidden;
   cursor: pointer;
   color: inherit;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
 }
 
 .movie-card:hover {
-  border-color: rgba(107, 255, 42, 0.30);
+  border-color: rgba(107, 255, 42, 0.3);
   box-shadow: 0 0 12px rgba(107, 255, 42, 0.12);
 }
 
@@ -152,7 +128,7 @@ function rolesStr(roles: string[]): string {
 .poster-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 45%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.4) 45%, transparent 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -174,14 +150,14 @@ function rolesStr(roles: string[]): string {
 
 .title-year {
   font-weight: 400;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .type-icon {
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255, 255, 255, 0.55);
   margin-left: 3px;
   position: relative;
   top: -1px;
@@ -206,9 +182,15 @@ function rolesStr(roles: string[]): string {
   margin-top: 2px;
 }
 
-.movie-roles.single { font-size: 0.68rem; }
-.role-line { display: block; }
-.role-name  { font-weight: 600; }
+.movie-roles.single {
+  font-size: 0.68rem;
+}
+.role-line {
+  display: block;
+}
+.role-name {
+  font-weight: 600;
+}
 
 .tmdb-link {
   position: absolute;
@@ -224,7 +206,9 @@ function rolesStr(roles: string[]): string {
   opacity: 0;
   background: var(--surface2);
   box-shadow: 0 0 10px 8px var(--surface2);
-  transition: color 0.12s, opacity 0.15s;
+  transition:
+    color 0.12s,
+    opacity 0.15s;
 }
 
 .movie-card:hover .tmdb-link {
@@ -234,83 +218,5 @@ function rolesStr(roles: string[]): string {
 .tmdb-link:hover {
   color: var(--text-2);
   background: var(--surface3);
-}
-
-/* ── Confirm overlay ── */
-.confirm-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 10, 10, 0.72);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.confirm-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 16px;
-  text-align: center;
-}
-
-.confirm-prompt {
-  font-size: 0.82rem;
-  color: var(--text-2);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.confirm-prompt strong {
-  color: var(--text);
-  font-size: 0.9rem;
-}
-
-.confirm-btns {
-  display: flex;
-  gap: 8px;
-}
-
-.confirm-yes {
-  padding: 6px 16px;
-  border-radius: 6px;
-  border: none;
-  background: rgba(107, 255, 42, 0.18);
-  color: #8fff5a;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.confirm-yes:hover {
-  background: rgba(107, 255, 42, 0.3);
-}
-
-.confirm-no {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: none;
-  color: var(--text-3);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-
-.confirm-no:hover {
-  background: var(--surface3);
-  color: var(--text-2);
-}
-
-/* ── Transition ── */
-.confirm-enter-active, .confirm-leave-active {
-  transition: opacity 0.15s ease;
-}
-.confirm-enter-from, .confirm-leave-to {
-  opacity: 0;
 }
 </style>

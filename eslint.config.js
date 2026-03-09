@@ -23,6 +23,25 @@ export default ts.config(
       },
     },
     rules: {
+      // ── General ─────────────────────────────────────────────────────────────
+      'curly': ['error', 'all'],
+      // Disallow single-line block bodies: if (x) { return y; } must be multi-line.
+      // Placed after eslint-config-prettier so it overrides the 'off' it sets.
+      // 1tbs is compatible with Prettier; arrow function concise forms are unaffected.
+      'brace-style': ['error', '1tbs', { allowSingleLine: false }],
+      // Require descriptive variable names going forward. Exceptions:
+      //   i/j/k  — loop indices
+      //   x/y/z  — coordinates or math
+      //   a/b    — sort comparators: arr.sort((a, b) => a - b)
+      //   n      — generic count / math scalar
+      //   _      — intentionally unused (paired with no-unused-vars pattern)
+      // Properties are excluded (object keys like { id: x } are fine short).
+      'id-length': ['warn', {
+        min: 2,
+        exceptions: ['_', 'i', 'j', 'k', 'x', 'y', 'z', 'a', 'b', 'n', 'N', 'e'],
+        properties: 'never',
+      }],
+
       // ── TypeScript ───────────────────────────────────────────────────────────
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/consistent-type-imports': ['error', {

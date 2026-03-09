@@ -1,65 +1,59 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { HistoryEntry } from '@/composables/useHistory'
-import { useHistory } from '@/composables/useHistory'
-import { profileUrl, posterUrl } from '@/composables/useTmdb'
-import { surname } from '@/utils/names'
-import { IconClock } from '@/components/icons'
-import { useClickOutside } from '@/composables/useClickOutside'
+import { ref } from 'vue';
+import type { HistoryEntry } from '@/composables/useHistory';
+import { useHistory } from '@/composables/useHistory';
+import { profileUrl, posterUrl } from '@/composables/useTmdb';
+import { surname } from '@/utils/names';
+import { IconClock } from '@/components/icons';
+import { useClickOutside } from '@/composables/useClickOutside';
+import { relativeTime } from '@/utils/time';
 
 const emit = defineEmits<{
-  restore: [entry: HistoryEntry]
-}>()
+  restore: [entry: HistoryEntry];
+}>();
 
-const { load, remove, clear } = useHistory()
+const { load, remove, clear } = useHistory();
 
-const entries = ref<HistoryEntry[]>([])
-const open    = ref(false)
-const root    = ref<HTMLElement | null>(null)
+const entries = ref<HistoryEntry[]>([]);
+const open = ref(false);
+const root = ref<HTMLElement | null>(null);
 
-entries.value = load()
-useClickOutside([root], () => { open.value = false })
+entries.value = load();
+useClickOutside([root], () => {
+  open.value = false;
+});
 
-function refresh() { entries.value = load() }
+function refresh() {
+  entries.value = load();
+}
 
 function handleRemove(id: string, ev: Event) {
-  ev.stopPropagation()
-  remove(id)
-  refresh()
+  ev.stopPropagation();
+  remove(id);
+  refresh();
 }
 
 function handleClear() {
-  clear()
-  refresh()
+  clear();
+  refresh();
 }
 
 function handleRestore(entry: HistoryEntry) {
-  emit('restore', entry)
-  open.value = false
+  emit('restore', entry);
+  open.value = false;
 }
 
 function entryLabel(entry: HistoryEntry): string {
   return entry.mode === 'person'
-    ? entry.persons.map(p => surname(p.name)).join(' · ')
-    : entry.titles.map(t => t.name).join(' · ')
+    ? entry.persons.map((person) => surname(person.name)).join(' · ')
+    : entry.titles.map((title) => title.name).join(' · ');
 }
 
-function relativeTime(ts: number): string {
-  const diff = Date.now() - ts
-  const m = Math.floor(diff / 60_000)
-  if (m < 1)  return 'just now'
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
-}
-
-defineExpose({ refresh })
+defineExpose({ refresh });
 </script>
 
 <template>
   <div ref="root" class="history-float">
-
     <!-- Popup panel (above button) -->
     <Transition name="panel">
       <div v-if="open" class="history-panel">
@@ -71,14 +65,8 @@ defineExpose({ refresh })
         <div v-if="!entries.length" class="panel-empty">No searches yet</div>
 
         <ul v-else class="panel-list">
-          <li
-            v-for="entry in entries"
-            :key="entry.id"
-            class="panel-entry"
-            @click="handleRestore(entry)"
-          >
+          <li v-for="entry in entries" :key="entry.id" class="panel-entry" @click="handleRestore(entry)">
             <div class="avatars">
-
               <!-- Person mode: circular profile photos -->
               <template v-if="entry.mode === 'person'">
                 <div
@@ -90,9 +78,7 @@ defineExpose({ refresh })
                   <img v-if="p.profile_path" :src="profileUrl(p.profile_path)" :alt="p.name" loading="lazy" />
                   <span v-else class="avatar-initial">{{ p.name[0] }}</span>
                 </div>
-                <div v-if="entry.persons.length > 4" class="avatar avatar-more">
-                  +{{ entry.persons.length - 4 }}
-                </div>
+                <div v-if="entry.persons.length > 4" class="avatar avatar-more">+{{ entry.persons.length - 4 }}</div>
               </template>
 
               <!-- Title mode: poster thumbnails -->
@@ -106,11 +92,8 @@ defineExpose({ refresh })
                   <img v-if="t.poster_path" :src="posterUrl(t.poster_path)" :alt="t.name" loading="lazy" />
                   <span v-else class="avatar-initial">{{ t.name[0] }}</span>
                 </div>
-                <div v-if="entry.titles.length > 4" class="avatar avatar-more">
-                  +{{ entry.titles.length - 4 }}
-                </div>
+                <div v-if="entry.titles.length > 4" class="avatar avatar-more">+{{ entry.titles.length - 4 }}</div>
               </template>
-
             </div>
 
             <div class="entry-meta">
@@ -137,7 +120,6 @@ defineExpose({ refresh })
       <span class="float-label">History</span>
       <span v-if="entries.length && !open" class="float-badge">{{ entries.length }}</span>
     </button>
-
   </div>
 </template>
 
@@ -167,8 +149,12 @@ defineExpose({ refresh })
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   position: relative;
 }
 
@@ -176,7 +162,7 @@ defineExpose({ refresh })
 .float-btn--active {
   background: var(--surface3);
   color: var(--text);
-  border-color: rgba(255,255,255,0.12);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .float-label {
@@ -208,7 +194,7 @@ defineExpose({ refresh })
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -240,7 +226,9 @@ defineExpose({ refresh })
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .clear-btn:hover {
@@ -307,10 +295,13 @@ defineExpose({ refresh })
   flex-shrink: 0;
 }
 
-.avatar:first-child { margin-left: 0; }
+.avatar:first-child {
+  margin-left: 0;
+}
 
 .avatar img {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: top center;
   display: block;
@@ -321,8 +312,14 @@ defineExpose({ refresh })
   border-radius: 4px;
 }
 
-.avatar-initial { text-transform: uppercase; line-height: 1; }
-.avatar-more { font-size: 0.58rem; background: var(--surface3); }
+.avatar-initial {
+  text-transform: uppercase;
+  line-height: 1;
+}
+.avatar-more {
+  font-size: 0.58rem;
+  background: var(--surface3);
+}
 
 /* ── Meta ── */
 .entry-meta {
@@ -339,7 +336,6 @@ defineExpose({ refresh })
   gap: 5px;
   min-width: 0;
 }
-
 
 .entry-names {
   font-size: 0.74rem;
@@ -367,15 +363,21 @@ defineExpose({ refresh })
   padding: 2px 4px;
   border-radius: 4px;
   flex-shrink: 0;
-  transition: opacity 0.12s, color 0.12s;
+  transition:
+    opacity 0.12s,
+    color 0.12s;
 }
 
-.remove-btn:hover { color: #e05c5c; }
+.remove-btn:hover {
+  color: #e05c5c;
+}
 
 /* ── Panel transition ── */
 .panel-enter-active,
 .panel-leave-active {
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
 
 .panel-enter-from,

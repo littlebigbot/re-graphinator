@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { useTheme } from '@/composables/useTheme'
-const { mode, cycleTheme } = useTheme()
+import { useTheme } from '@/composables/useTheme';
+const { mode, cycleTheme } = useTheme();
 
 const ICONS: Record<string, string> = {
-  auto:  '◑',
-  dark:  '●',
+  auto: '◑',
+  dark: '●',
   light: '○',
-}
+};
 const LABELS: Record<string, string> = {
-  auto:  'AUTO',
-  dark:  'DARK',
+  auto: 'AUTO',
+  dark: 'DARK',
   light: 'LIGHT',
-}
+};
 </script>
 
 <template>
@@ -84,7 +84,10 @@ const LABELS: Record<string, string> = {
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
   flex-shrink: 0;
 }
 
@@ -94,26 +97,31 @@ const LABELS: Record<string, string> = {
   background: var(--accent-dim);
 }
 
-.theme-icon { font-size: 0.78rem; line-height: 1; }
+.theme-icon {
+  font-size: 0.78rem;
+  line-height: 1;
+}
 
 /* ── Rule ── */
 .header-rule {
   position: absolute;
   bottom: -1px;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   height: 1px;
-  background: linear-gradient(
-    to right,
-    var(--accent) 0%,
-    var(--accent) 30%,
-    transparent 100%
-  );
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, transparent 100%);
   opacity: 0.4;
 }
 
 @media (max-width: 640px) {
-  .header { padding: 12px 16px 0; }
-  .logo-text { font-size: 1.6rem; }
-  .logo-sub { display: none; }
+  .header {
+    padding: 12px 16px 0;
+  }
+  .logo-text {
+    font-size: 1.6rem;
+  }
+  .logo-sub {
+    display: none;
+  }
 }
 </style>
