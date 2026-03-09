@@ -3438,6 +3438,7 @@ __metadata:
     lint-staged: "npm:^16.3.2"
     postcss: "npm:^8.5.8"
     prettier: "npm:^3.8.1"
+    stylelint-config-tailwindcss: "npm:^1.0.1"
     tailwindcss: "npm:^4.2.1"
     typescript: "npm:^5.4.2"
     typescript-eslint: "npm:^8.56.1"
@@ -3713,6 +3714,16 @@ __metadata:
   dependencies:
     ansi-regex: "npm:^6.2.2"
   checksum: 10c0/544d13b7582f8254811ea97db202f519e189e59d35740c46095897e254e4f1aa9fe1524a83ad6bc5ad67d4dd6c0281d2e0219ed62b880a6238a16a17d375f221
+  languageName: node
+  linkType: hard
+
+"stylelint-config-tailwindcss@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "stylelint-config-tailwindcss@npm:1.0.1"
+  peerDependencies:
+    stylelint: ">=13.13.1"
+    tailwindcss: ">=2.2.16"
+  checksum: 10c0/6a1ceb39d6fea7f1b78809eb555b17380bdb6ba443d9f78801958d91ee6bdad7d5a07caf249b51d07b029728b9aeda29177a5f46491c107c0c610a7226ce32f6
   languageName: node
   linkType: hard
 
