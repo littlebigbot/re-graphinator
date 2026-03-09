@@ -94,35 +94,33 @@ async function resolveSubjects(mode: 'person' | 'title', rawIds: string, apiKey:
 
 // ── Layout helpers ────────────────────────────────────────────────────────────
 
-// Circle geometry — mirrors og.svg
-const R = 195;
-const LEFT_CX = 440;
-const RIGHT_CX = 760;
-const CY = 248;
-// Overlap: LEFT_CX + R = 635, RIGHT_CX - R = 565 → 70px wide lens
+// Stacked circle geometry — matches search-history avatar style, scaled up
+const D = 200; // circle diameter
+const R = D / 2; // radius
+const STEP = 140; // centre-to-centre distance (60px overlap)
+const CY = 252; // vertical centre shared by all circles
 
-// Fallback circle colours when no subject assigned
-const FALLBACK_COLORS = ['rgba(245,197,24,0.55)', 'rgba(107,255,42,0.55)'];
+const FALLBACK_COLORS = [
+  'rgba(245,197,24,0.5)',
+  'rgba(107,255,42,0.5)',
+  'rgba(44,201,255,0.5)',
+  'rgba(212,28,28,0.5)',
+  'rgba(200,125,255,0.5)',
+];
 
-function makeCircle(cx: number, subject: SubjectInfo | undefined, isTitle: boolean, slotIndex: number): SatoriNode {
-  const d = R * 2;
-  const color = subject?.color ?? FALLBACK_COLORS[slotIndex] ?? '#ffffff';
-  const borderColor = subject ? color : `${color}`;
-  const borderOpacity = subject ? 1 : 0.5;
+function circleCX(i: number, n: number): number {
+  const totalSpan = (n - 1) * STEP + D;
+  return (1200 - totalSpan) / 2 + R + i * STEP;
+}
 
-  let inner: SatoriNode;
-  if (subject?.image) {
-    inner = el('img', { width: d, height: d, objectFit: 'cover' }, undefined, { src: subject.image });
-  } else {
-    // No photo — faint branded fill matching og.svg
-    const bgColor = slotIndex === 0 ? 'rgba(245,197,24,0.08)' : 'rgba(107,255,42,0.08)';
-    inner = el('div', {
-      width: d,
-      height: d,
-      background: subject ? '#0f1a16' : bgColor,
-      display: 'flex',
-    });
-  }
+function makeCircle(i: number, n: number, subject: SubjectInfo | undefined, isTitle: boolean): SatoriNode {
+  const cx = circleCX(i, n);
+  const color = subject?.color ?? FALLBACK_COLORS[i] ?? '#ffffff';
+  const bgFill = FALLBACK_COLORS[i]?.replace('0.5', '0.07') ?? '#0f1a16';
+
+  const inner: SatoriNode = subject?.image
+    ? el('img', { width: D, height: D, objectFit: 'cover' }, undefined, { src: subject.image })
+    : el('div', { width: D, height: D, background: bgFill, display: 'flex' });
 
   return el(
     'div',
@@ -130,35 +128,36 @@ function makeCircle(cx: number, subject: SubjectInfo | undefined, isTitle: boole
       position: 'absolute',
       left: cx - R,
       top: CY - R,
-      width: d,
-      height: d,
-      borderRadius: isTitle ? 20 : '50%',
+      width: D,
+      height: D,
+      borderRadius: isTitle ? 16 : '50%',
       overflow: 'hidden',
-      border: `2.5px solid ${borderColor}`,
-      opacity: borderOpacity,
-      boxShadow: `0 0 48px ${color}44`,
+      border: `3px solid ${color}`,
+      boxShadow: `0 0 40px ${color}55`,
+      background: '#04090a',
       display: 'flex',
     },
     inner,
   );
 }
 
-function makeName(cx: number, subject: SubjectInfo): SatoriNode {
+function makeName(i: number, n: number, subject: SubjectInfo): SatoriNode {
+  const cx = circleCX(i, n);
   return el(
     'div',
     {
       position: 'absolute',
-      left: cx - 170,
-      top: CY + R + 16,
-      width: 340,
+      left: cx - 130,
+      top: CY + R + 14,
+      width: 260,
       display: 'flex',
       justifyContent: 'center',
       color: subject.color,
       fontFamily: 'Bebas Neue',
       fontStyle: 'italic',
-      fontSize: 28,
+      fontSize: 26,
       letterSpacing: 2,
-      textShadow: `0 0 18px ${subject.color}77`,
+      textShadow: `0 0 14px ${subject.color}66`,
     },
     subject.name,
   );
@@ -168,13 +167,13 @@ function buildWordmark(): SatoriNode {
   const bigR: SatoriStyle = {
     fontFamily: 'Bebas Neue',
     fontStyle: 'italic',
-    fontSize: 60,
+    fontSize: 62,
     color: '#6bff2a',
     lineHeight: 1,
     display: 'flex',
     letterSpacing: 3,
   };
-  const body: SatoriStyle = { ...bigR, fontSize: 46 };
+  const body: SatoriStyle = { ...bigR, fontSize: 48 };
 
   return el(
     'div',
@@ -189,24 +188,14 @@ function buildWordmark(): SatoriNode {
       gap: 5,
     },
     [
-      el(
-        'div',
-        {
-          display: 'flex',
-          alignItems: 'baseline',
-          textShadow: '0 0 24px rgba(107,255,42,0.6)',
-        },
-        [el('span', bigR, 'R'), el('span', body, 'E-GRAPHINATO'), el('span', bigR, 'R')],
-      ),
+      el('div', { display: 'flex', alignItems: 'baseline', textShadow: '0 0 24px rgba(107,255,42,0.6)' }, [
+        el('span', bigR, 'R'),
+        el('span', body, 'E-GRAPHINATO'),
+        el('span', bigR, 'R'),
+      ]),
       el(
         'span',
-        {
-          color: '#2f5c40',
-          fontSize: 13,
-          letterSpacing: 4,
-          fontStyle: 'italic',
-          display: 'flex',
-        },
+        { color: '#2f5c40', fontSize: 13, letterSpacing: 4, fontStyle: 'italic', display: 'flex' },
         'Filmography Overlap System',
       ),
     ],
@@ -215,58 +204,16 @@ function buildWordmark(): SatoriNode {
 
 function buildLayout(subjects: SubjectInfo[], mode: 'person' | 'title'): SatoriNode {
   const isTitle = mode === 'title';
-  const s0 = subjects[0];
-  const s1 = subjects[1];
-  const extras = subjects.slice(2);
+  const n = Math.max(subjects.length, 2);
 
-  // Overlap tint — red strip over the 70px lens
-  const overlapStart = RIGHT_CX - R; // 565
-  const overlapEnd = LEFT_CX + R; // 635
-  const overlapW = overlapEnd - overlapStart; // 70
-  const overlapEl = el('div', {
-    position: 'absolute',
-    left: overlapStart,
-    top: CY - R,
-    width: overlapW,
-    height: R * 2,
-    background: 'rgba(212,28,28,0.38)',
-    display: 'flex',
-  });
+  // Render right-to-left so index 0 (leftmost) paints last → appears on top,
+  // matching the search-history stacking direction.
+  const circleEls: SatoriNode[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    circleEls.push(makeCircle(i, n, subjects[i], isTitle));
+  }
 
-  // Names below circles
-  const nameLeft = s0 ? makeName(LEFT_CX, s0) : el('div', { display: 'flex' });
-  const nameRight = s1 ? makeName(RIGHT_CX, s1) : el('div', { display: 'flex' });
-
-  // Extra subjects (3+): small name strip between names and wordmark
-  const extrasRow =
-    extras.length > 0
-      ? el(
-          'div',
-          {
-            position: 'absolute',
-            left: 0,
-            top: CY + R + 58,
-            width: 1200,
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 24,
-          },
-          extras.map((s) =>
-            el(
-              'span',
-              {
-                color: s.color,
-                fontFamily: 'Bebas Neue',
-                fontStyle: 'italic',
-                fontSize: 20,
-                letterSpacing: 2,
-                display: 'flex',
-              },
-              s.name,
-            ),
-          ),
-        )
-      : el('div', { display: 'flex' });
+  const nameEls = subjects.map((s, i) => makeName(i, n, s));
 
   return el(
     'div',
@@ -277,15 +224,7 @@ function buildLayout(subjects: SubjectInfo[], mode: 'person' | 'title'): SatoriN
       display: 'flex',
       position: 'relative',
     },
-    [
-      makeCircle(LEFT_CX, s0, isTitle, 0),
-      makeCircle(RIGHT_CX, s1, isTitle, 1),
-      overlapEl,
-      nameLeft,
-      nameRight,
-      extrasRow,
-      buildWordmark(),
-    ],
+    [...circleEls, ...nameEls, buildWordmark()],
   );
 }
 
