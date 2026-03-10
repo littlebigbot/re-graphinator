@@ -188,15 +188,10 @@ function buildWordmark(): SatoriNode {
       gap: 5,
     },
     [
-      el('div', { display: 'flex', alignItems: 'baseline', textShadow: '0 0 24px rgba(107,255,42,0.6)' }, [
-        el('span', bigR, 'R'),
-        el('span', body, 'E-GRAPHINATO'),
-        el('span', bigR, 'R'),
-      ]),
       el(
-        'span',
-        { color: '#2f5c40', fontSize: 13, letterSpacing: 4, fontStyle: 'italic', display: 'flex' },
-        'Filmography Overlap System',
+        'div',
+        { display: 'flex', alignItems: 'start', textShadow: '0 0 24px rgba(107,255,42,0.6)', fontStyle: 'italic' },
+        [el('span', bigR, 'R'), el('span', body, 'E-GRAPHINATO'), el('span', bigR, 'R')],
       ),
     ],
   );
