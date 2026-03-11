@@ -43,6 +43,7 @@ const emit = defineEmits<{
 const configOpen = ref(false);
 const configBtnRef = ref<HTMLElement | null>(null);
 const configPanelRef = ref<HTMLElement | null>(null);
+const advancedOpen = ref(false);
 
 useClickOutside([configBtnRef, configPanelRef], () => {
   configOpen.value = false;
@@ -122,6 +123,10 @@ function totalForSlot(i: number): number {
             ref="configBtnRef"
             class="config-btn"
             :class="{ 'config-btn--open': configOpen }"
+            type="button"
+            aria-label="Open settings"
+            aria-haspopup="true"
+            :aria-expanded="configOpen"
             @click="configOpen = !configOpen"
           >
             <IconGear />
@@ -130,15 +135,35 @@ function totalForSlot(i: number): number {
             <div v-if="configOpen" ref="configPanelRef" class="config-panel">
               <div class="config-section-label">Defaults</div>
               <label class="config-row">
-                <span class="config-row-label">Self Credits for Cast/Crew</span>
+                <span class="config-row-label">Self credits for cast/crew</span>
                 <button
                   class="config-toggle"
                   :class="{ 'config-toggle--on': selfEnabled }"
+                  type="button"
                   @click="emit('toggle-self')"
                 >
                   <span class="config-toggle-knob" />
                 </button>
               </label>
+
+              <button
+                class="config-advanced-toggle"
+                type="button"
+                aria-label="Toggle advanced settings"
+                :aria-expanded="advancedOpen"
+                @click="advancedOpen = !advancedOpen"
+              >
+                <span class="config-advanced-label">Advanced options</span>
+                <span class="config-advanced-chevron" :class="{ 'config-advanced-chevron--open': advancedOpen }">
+                  ▾
+                </span>
+              </button>
+
+              <Transition name="config-advanced">
+                <div v-if="advancedOpen" class="config-advanced-panel">
+                  <p class="config-advanced-hint">Tweak expert settings here as more options are added.</p>
+                </div>
+              </Transition>
             </div>
           </Transition>
         </div>
@@ -336,6 +361,44 @@ function totalForSlot(i: number): number {
   user-select: none;
 }
 
+.config-advanced-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.config-advanced-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.config-advanced-chevron {
+  transition: transform 0.12s ease;
+}
+
+.config-advanced-chevron--open {
+  transform: rotate(180deg);
+}
+
+.config-advanced-panel {
+  padding: 4px 14px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.config-advanced-hint {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin: 4px 0 2px;
+}
+
 /* pill toggle */
 .config-toggle {
   flex-shrink: 0;
@@ -381,6 +444,19 @@ function totalForSlot(i: number): number {
 .config-drop-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+.config-advanced-enter-active,
+.config-advanced-leave-active {
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.config-advanced-enter-from,
+.config-advanced-leave-to {
+  opacity: 0;
+  transform: translateY(-3px);
 }
 
 /* ── Canvas overlay wrapper ── */
@@ -547,6 +623,25 @@ function totalForSlot(i: number): number {
 .compare-fade-enter-from,
 .compare-fade-leave-to {
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .config-drop-enter-active,
+  .config-drop-leave-active,
+  .config-advanced-enter-active,
+  .config-advanced-leave-active,
+  .compare-fade-enter-active,
+  .compare-fade-leave-active {
+    transition: none;
+  }
+
+  .compare-overlay {
+    animation: none;
+  }
+
+  .compare-overlay--loading .compare-label {
+    animation: none;
+  }
 }
 
 /* ── Share button ── */

@@ -54,7 +54,7 @@ function roleCategory(credit: TmdbCombinedCredit): RoleCategory {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useTmdb() {
-  async function request<T>(path: string, params: Record<string, string> = {}): Promise<T> {
+  async function request<T>(path: string, params: Record<string, string> = {}, signal?: AbortSignal): Promise<T> {
     let url: URL;
 
     if (import.meta.env.DEV) {
@@ -69,7 +69,7 @@ export function useTmdb() {
       url.searchParams.set(k, value);
     }
 
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), { signal });
     if (!res.ok) {
       throw new Error(`TMDB ${res.status}: ${res.statusText}`);
     }
@@ -78,14 +78,18 @@ export function useTmdb() {
 
   // ── Person search ───────────────────────────────────────────────────────────
 
-  async function searchPeople(query: string): Promise<TmdbPerson[]> {
+  async function searchPeople(query: string, signal?: AbortSignal): Promise<TmdbPerson[]> {
     if (!query.trim()) {
       return [];
     }
-    const data = await request<{ results: TmdbPerson[] }>('/search/person', {
-      query,
-      include_adult: 'false',
-    });
+    const data = await request<{ results: TmdbPerson[] }>(
+      '/search/person',
+      {
+        query,
+        include_adult: 'false',
+      },
+      signal,
+    );
     return data.results ?? [];
   }
 
@@ -138,14 +142,18 @@ export function useTmdb() {
    * Search for films and TV shows via /search/multi.
    * Results are filtered to movie/tv only and normalised to TmdbTitle.
    */
-  async function searchTitles(query: string): Promise<TmdbTitle[]> {
+  async function searchTitles(query: string, signal?: AbortSignal): Promise<TmdbTitle[]> {
     if (!query.trim()) {
       return [];
     }
-    const data = await request<TmdbPagedResponse<TmdbMultiSearchResult>>('/search/multi', {
-      query,
-      include_adult: 'false',
-    });
+    const data = await request<TmdbPagedResponse<TmdbMultiSearchResult>>(
+      '/search/multi',
+      {
+        query,
+        include_adult: 'false',
+      },
+      signal,
+    );
 
     return (data.results ?? [])
       .filter((result) => result.media_type === 'movie' || result.media_type === 'tv')
@@ -266,14 +274,18 @@ export function useTmdb() {
    * Used in unset mode (first slot, before mode is locked).
    * Returns a mixed array; callers use isPersonSlot() to discriminate.
    */
-  async function searchAll(query: string): Promise<(TmdbPerson | TmdbTitle)[]> {
+  async function searchAll(query: string, signal?: AbortSignal): Promise<(TmdbPerson | TmdbTitle)[]> {
     if (!query.trim()) {
       return [];
     }
-    const data = await request<TmdbPagedResponse<TmdbMultiSearchResult>>('/search/multi', {
-      query,
-      include_adult: 'false',
-    });
+    const data = await request<TmdbPagedResponse<TmdbMultiSearchResult>>(
+      '/search/multi',
+      {
+        query,
+        include_adult: 'false',
+      },
+      signal,
+    );
 
     return (data.results ?? []).flatMap((result): (TmdbPerson | TmdbTitle)[] => {
       if (result.media_type === 'person') {

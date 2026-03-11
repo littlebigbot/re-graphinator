@@ -45,20 +45,65 @@ const placeholder = computed(() => {
   return `Search for a person or title…`;
 });
 
+// ── Keyboard navigation state ──────────────────────────────────────────────────
+const highlightedIndex = ref(-1);
+
+function resetHighlight(): void {
+  highlightedIndex.value = dropdown.value.length ? 0 : -1;
+}
+
+watch(
+  dropdown,
+  () => {
+    resetHighlight();
+  },
+  { flush: 'post' },
+);
+
 // ── Handlers ─────────────────────────────────────────────────────────────────
 function select(item: TmdbPerson | TmdbTitle): void {
   emit('update:modelValue', item);
   query.value = '';
   showDrop.value = false;
+  highlightedIndex.value = -1;
 }
 
 function clear(): void {
   emit('update:modelValue', null);
   emit('clear');
+  highlightedIndex.value = -1;
 }
 
 function hideOnError(e: Event): void {
   (e.target as HTMLImageElement).style.visibility = 'hidden';
+}
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (!showDrop.value || !dropdown.value.length) {
+    if (event.key === 'ArrowDown' && dropdown.value.length) {
+      showDrop.value = true;
+      resetHighlight();
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (event.key === 'ArrowDown') {
+    highlightedIndex.value = (highlightedIndex.value + 1 + dropdown.value.length) % dropdown.value.length;
+    event.preventDefault();
+  } else if (event.key === 'ArrowUp') {
+    highlightedIndex.value = (highlightedIndex.value - 1 + dropdown.value.length) % dropdown.value.length;
+    event.preventDefault();
+  } else if (event.key === 'Enter') {
+    if (highlightedIndex.value >= 0 && highlightedIndex.value < dropdown.value.length) {
+      select(dropdown.value[highlightedIndex.value]);
+      event.preventDefault();
+    }
+  } else if (event.key === 'Escape') {
+    showDrop.value = false;
+    highlightedIndex.value = -1;
+    event.preventDefault();
+  }
 }
 
 // ── Dropdown item helpers ─────────────────────────────────────────────────────
@@ -69,10 +114,24 @@ function hideOnError(e: Event): void {
     <!-- ── Input + dropdown ── -->
     <template v-if="!modelValue">
       <div class="search-input-wrap">
-        <input v-model="query" type="text" class="slot-input" :placeholder="placeholder" autocomplete="off" />
-        <div v-show="showDrop && dropdown.length" class="search-dropdown">
+        <input
+          v-model="query"
+          type="text"
+          class="slot-input"
+          :placeholder="placeholder"
+          autocomplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          :aria-expanded="showDrop"
+          aria-haspopup="listbox"
+          :aria-activedescendant="highlightedIndex >= 0 ? `slot-${index}-option-${highlightedIndex}` : undefined"
+          :aria-owns="`slot-${index}-dropdown`"
+          @keydown="handleKeydown"
+        />
+        <div v-show="showDrop && dropdown.length" :id="`slot-${index}-dropdown`" class="search-dropdown" role="listbox">
           <DropdownItem
             v-for="item in dropdown"
+            :id="`slot-${index}-option-${dropdown.indexOf(item)}`"
             :key="item.id"
             :thumbnail-src="isPersonSlot(item) ? profileUrl(item.profile_path) : posterUrl(item.poster_path)"
             :thumb-class="isPersonSlot(item) ? 'thumb--person' : 'thumb--title'"
@@ -81,6 +140,8 @@ function hideOnError(e: Event): void {
             :badge="itemBadge(item, searchMode)"
             :on-select="() => select(item)"
             :on-error="hideOnError"
+            role="option"
+            :aria-selected="dropdown.indexOf(item) === highlightedIndex"
           />
         </div>
       </div>

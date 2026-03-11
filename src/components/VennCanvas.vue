@@ -395,4 +395,11 @@ watch(() => [props.slots, props.hasResults, props.regionCounts, props.enabledMas
   opacity: 0;
   transform: translateY(3px);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .tip-enter-active,
+  .tip-leave-active {
+    transition: none;
+  }
+}
 </style>
