@@ -23,13 +23,16 @@ const emit = defineEmits<{
 
 const svgRef = ref<SVGSVGElement | null>(null);
 
-const tooltip = ref<{
+type TooltipState = {
   visible: boolean;
   x: number;
   y: number;
   names: string[];
   count: number;
-}>({ visible: false, x: 0, y: 0, names: [], count: 0 });
+};
+
+const tooltip = ref<TooltipState>({ visible: false, x: 0, y: 0, names: [], count: 0 });
+const lastHoverMask = ref<RegionMask>(0);
 
 // Display count: filled slots, but always at least 2 so the initial dashed pair shows.
 // Extra null slots added while typing are clamped out — the new circle only appears on selection.
@@ -233,6 +236,11 @@ function draw(): void {
     }
     const [mx, my] = d3.pointer(event, this);
     const mask = maskAt(mx, my);
+
+    if (mask === lastHoverMask.value) {
+      return;
+    }
+    lastHoverMask.value = mask;
     applyStyles(mask);
 
     const count =
@@ -252,6 +260,7 @@ function draw(): void {
   });
 
   svg.on('mouseleave', () => {
+    lastHoverMask.value = 0;
     applyStyles(0);
     tooltip.value = { ...tooltip.value, visible: false };
   });
