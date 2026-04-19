@@ -9,13 +9,24 @@ import { activeBits } from '@/utils/bitmask';
 import { IconExternalLink, IconTv, IconFilm } from '@/components/icons';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 
-const props = defineProps<{
-  item: ProjectWithRoles;
-  persons: TmdbPerson[];
-  selectedMask: RegionMask;
-}>();
+const props = withDefaults(
+  defineProps<{
+    item: ProjectWithRoles;
+    persons: TmdbPerson[];
+    selectedMask: RegionMask;
+    /** This item's Venn region mask (for highlight-on-hover). Undefined in title mode. */
+    regionMask?: RegionMask;
+  }>(),
+  { regionMask: 0 },
+);
 
-const emit = defineEmits<{ 'compare-with': [item: ProjectWithRoles] }>();
+const emit = defineEmits<{
+  'compare-with': [item: ProjectWithRoles];
+  'region-hover': [mask: RegionMask];
+}>();
+/** Expose for template (props aren't auto-unwrapped as top-level bindings). */
+const item = computed(() => props.item);
+const regionMask = computed(() => props.regionMask ?? 0);
 
 const confirming = ref(false);
 
@@ -34,12 +45,17 @@ function rolesStr(roles: string[]): string {
 </script>
 
 <template>
-  <div class="movie-card" @click="confirming = !confirming">
+  <div
+    class="movie-card"
+    @click="confirming = !confirming"
+    @mouseenter="regionMask ? emit('region-hover', regionMask) : null"
+    @mouseleave="emit('region-hover', 0)"
+  >
     <div class="poster-wrap">
       <img v-if="poster" class="movie-poster" :src="poster" :alt="item.title" loading="lazy" />
       <div v-else class="movie-poster-placeholder">🎬</div>
 
-      <!-- Title overlay — visible on hover -->
+      <!-- Title overlay — visible on hover (desktop), always visible on mobile -->
       <div class="poster-overlay">
         <div class="movie-title">
           {{ item.title }}
@@ -50,7 +66,18 @@ function rolesStr(roles: string[]): string {
           </span>
         </div>
       </div>
+
+      <!-- Title strip always visible on mobile (no hover) -->
+      <div class="poster-title-mobile">
+        <span class="mobile-title">{{ item.title }}</span>
+        <span class="mobile-year">({{ year }})</span>
+      </div>
     </div>
+
+    <!-- Compare button — visible on hover (desktop) or always (mobile) -->
+    <button type="button" class="compare-btn" title="Compare from this title" @click.stop="confirming = true">
+      Compare
+    </button>
 
     <div class="movie-body">
       <div v-if="activePeople.length > 1" class="movie-roles">
@@ -74,7 +101,7 @@ function rolesStr(roles: string[]): string {
       :show="confirming"
       :name="item.title"
       @confirm="
-        emit('compare-with', item);
+        emit('compare-with', props.item);
         confirming = false;
       "
       @cancel="confirming = false"
@@ -213,6 +240,68 @@ function rolesStr(roles: string[]): string {
 
 .movie-card:hover .tmdb-link {
   opacity: 1;
+}
+
+/* Title strip — visible on mobile only (no hover on touch) */
+.poster-title-mobile {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+  flex-direction: column;
+  gap: 0;
+}
+@media (max-width: 640px), (pointer: coarse) {
+  .poster-title-mobile {
+    display: flex;
+  }
+  .movie-card:hover .poster-overlay {
+    opacity: 0; /* prefer mobile strip on touch */
+  }
+  .compare-btn {
+    opacity: 1;
+  }
+}
+
+.mobile-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-year {
+  font-size: 0.64rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Compare button — hover (desktop) or always (mobile) */
+.compare-btn {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(var(--accent-rgb), 0.25);
+  color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+.movie-card:hover .compare-btn {
+  opacity: 1;
+}
+.compare-btn:hover {
+  background: rgba(var(--accent-rgb), 0.4);
 }
 
 .tmdb-link:hover {

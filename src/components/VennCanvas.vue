@@ -8,14 +8,19 @@ import { profileUrl, posterUrl } from '@/composables/useTmdb';
 import { VENN_LAYOUTS } from '@/utils/vennLayout';
 import { surname } from '@/utils/names';
 
-const props = defineProps<{
-  slots: (TmdbPerson | TmdbTitle | null)[];
-  hasResults: boolean;
-  isLoading: boolean;
-  regionCounts: Map<RegionMask, number>;
-  enabledMask: number;
-  selectedMask: RegionMask;
-}>();
+const props = withDefaults(
+  defineProps<{
+    slots: (TmdbPerson | TmdbTitle | null)[];
+    hasResults: boolean;
+    isLoading: boolean;
+    regionCounts: Map<RegionMask, number>;
+    enabledMask: number;
+    selectedMask: RegionMask;
+    /** Hover mask from external source (e.g. movie card hover). */
+    externalHoverMask?: RegionMask;
+  }>(),
+  { externalHoverMask: 0 },
+);
 
 const emit = defineEmits<{
   select: [mask: RegionMask];
@@ -33,6 +38,12 @@ type TooltipState = {
 
 const tooltip = ref<TooltipState>({ visible: false, x: 0, y: 0, names: [], count: 0 });
 const lastHoverMask = ref<RegionMask>(0);
+const applyStylesRef = ref<(mask: RegionMask) => void>(() => {});
+
+/** Effective hover: diagram pointer takes precedence when over SVG, else external (e.g. card). */
+function effectiveHoverMask(): RegionMask {
+  return lastHoverMask.value || (props.externalHoverMask ?? 0);
+}
 
 // Display count: filled slots, but always at least 2 so the initial dashed pair shows.
 // Extra null slots added while typing are clamped out — the new circle only appears on selection.
@@ -261,9 +272,13 @@ function draw(): void {
 
   svg.on('mouseleave', () => {
     lastHoverMask.value = 0;
-    applyStyles(0);
+    const effective = props.externalHoverMask || 0;
+    applyStyles(effective);
     tooltip.value = { ...tooltip.value, visible: false };
   });
+
+  // React to external hover (e.g. from movie card) when not hovering the diagram
+  applyStylesRef.value = applyStyles;
 
   svg.on('click', function (this: SVGSVGElement, event: MouseEvent) {
     if (!props.hasResults) {
@@ -310,21 +325,57 @@ function draw(): void {
       .attr('opacity', isEnabled(origIdx) ? 1 : 0.4);
   });
 
-  // ── Intersection count — only shown when results exist and a region is selected ──
-  if (props.hasResults && props.selectedMask > 0) {
-    const selCenters = centers.filter((center) => (props.selectedMask >> center.origIdx) & 1);
-    const cx = selCenters.reduce((sum, center) => sum + center.x, 0) / selCenters.length;
-    const cy = selCenters.reduce((sum, center) => sum + center.y, 0) / selCenters.length;
-    const selCount = [...props.regionCounts.entries()]
-      .filter(([selMask]) => (selMask & props.selectedMask) === props.selectedMask)
-      .reduce((sum, [, n]) => sum + n, 0);
-    const selColor = selCenters.length === 1 ? PERSON_COLORS[selCenters[0].origIdx] : '#c8b4e8';
-    makeText(cx, cy, selColor, 30, 800, 0.95).text(selCount);
+  // ── Intersection count — shown whenever results exist ──
+  if (props.hasResults) {
+    const activeMask = props.selectedMask > 0 ? props.selectedMask : (1 << N) - 1;
+    const selCenters = centers.filter((center) => (activeMask >> center.origIdx) & 1);
+    if (selCenters.length > 0) {
+      const cx = selCenters.reduce((sum, center) => sum + center.x, 0) / selCenters.length;
+      const cy = selCenters.reduce((sum, center) => sum + center.y, 0) / selCenters.length;
+      const selCount = [...props.regionCounts.entries()]
+        .filter(([selMask]) => (selMask & activeMask) === activeMask)
+        .reduce((sum, [, n]) => sum + n, 0);
+      const selColor = selCenters.length === 1 ? PERSON_COLORS[selCenters[0].origIdx] : '#c8b4e8';
+      // Background pill for legibility over overlapping circles
+      const textWidth = String(selCount).length * 18 + 12;
+      svg
+        .append('rect')
+        .attr('x', cx - textWidth / 2)
+        .attr('y', cy - 20)
+        .attr('width', textWidth)
+        .attr('height', 38)
+        .attr('rx', 6)
+        .attr('fill', 'rgba(8, 12, 8, 0.72)')
+        .attr('pointer-events', 'none');
+      makeText(cx, cy, selColor, 30, 800, 0.95).text(selCount);
+    }
   }
 }
 
 onMounted(draw);
 watch(() => [props.slots, props.hasResults, props.regionCounts, props.enabledMask, props.selectedMask] as const, draw);
+watch(
+  () => props.externalHoverMask,
+  () => applyStylesRef.value(effectiveHoverMask()),
+);
+watch(
+  () => props.externalHoverMask,
+  () => {
+    applyStylesRef.value(effectiveHoverMask());
+  },
+);
+watch(
+  () => props.externalHoverMask,
+  (ext) => {
+    applyStylesRef.value(lastHoverMask.value || (ext ?? 0));
+  },
+);
+watch(
+  () => props.externalHoverMask,
+  () => {
+    applyStylesRef.value(effectiveHoverMask());
+  },
+);
 </script>
 
 <template>

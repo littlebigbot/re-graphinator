@@ -8,14 +8,19 @@ import { useClickOutside } from '@/composables/useClickOutside';
 import { useImageFallback } from '@/composables/useImageFallback';
 import { itemLabel, itemBadge, itemThumb } from '@/utils/item';
 
-const props = defineProps<{
-  slots: (TmdbPerson | TmdbTitle | null)[];
-  searchMode: SearchMode | null;
-  hasResults: boolean;
-  enabledMask: number;
-  credits: Project[][];
-  castLists: CastMember[][];
-}>();
+const props = withDefaults(
+  defineProps<{
+    slots: (TmdbPerson | TmdbTitle | null)[];
+    searchMode: SearchMode | null;
+    hasResults: boolean;
+    enabledMask: number;
+    credits: Project[][];
+    castLists: CastMember[][];
+    /** When true, only search/add people (e.g. on Genre view). */
+    personOnly?: boolean;
+  }>(),
+  { personOnly: false },
+);
 
 const emit = defineEmits<{
   'update:slot': [idx: number, val: TmdbPerson | TmdbTitle | null];
@@ -45,17 +50,22 @@ const nextColor = computed(() =>
 
 const placeholder = computed(() => {
   if (activeSearchIdx.value === null) {
-    return filledSlots.value.length ? 'Search to add another…' : 'Search…';
+    return filledSlots.value.length ? 'Search to add another…' : props.personOnly ? 'Search for people…' : 'Search…';
   }
   const n = activeSearchIdx.value + 1;
+  if (props.personOnly || props.searchMode === 'person') {
+    return `Add person ${n}…`;
+  }
   if (props.searchMode === 'title') {
     return `Add title ${n}…`;
   }
-  if (props.searchMode === 'person') {
-    return `Add person ${n}…`;
-  }
   return `Add person or title…`;
 });
+
+/** First-time hint when all slots are empty. */
+const showFirstTimeHint = computed(
+  () => filledSlots.value.length === 0 && (props.searchMode === null || props.personOnly),
+);
 
 function slotCount(i: number): number {
   return props.searchMode === 'title' ? (props.castLists[i]?.length ?? 0) : (props.credits[i]?.length ?? 0);
@@ -74,7 +84,7 @@ const {
   showDrop,
   search: runSearch,
 } = useSearchDropdown(
-  () => props.searchMode,
+  () => (props.personOnly ? 'person' : props.searchMode),
   () => {
     highlightIdx.value = -1;
   },
@@ -151,10 +161,23 @@ const { broken: brokenThumbs, onError: onThumbError } = useImageFallback();
 useClickOutside([containerRef], () => {
   showDrop.value = false;
 });
+
+function focusSearch(): void {
+  inputRef.value?.focus();
+}
+
+defineExpose({ focusSearch });
 </script>
 
 <template>
   <div ref="containerRef" class="tag-wrap" :style="`--next-color: ${nextColor}`">
+    <p v-if="showFirstTimeHint" class="first-time-hint">
+      {{
+        personOnly
+          ? 'Search for 2+ people to compare their genre fingerprints.'
+          : 'Search for 2+ people (e.g. actors, directors) to compare their filmographies. Or check your recent searches in the History button.'
+      }}
+    </p>
     <!-- ── Tag bar: chips + input + clear ── -->
     <div class="tag-bar" @click="inputRef?.focus()">
       <!-- Filled slot chips -->
@@ -232,6 +255,13 @@ useClickOutside([containerRef], () => {
 .tag-wrap {
   position: relative;
   margin-bottom: 14px;
+}
+
+.first-time-hint {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-3);
+  line-height: 1.4;
 }
 
 /* ── Bar ── */

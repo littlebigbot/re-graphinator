@@ -129,6 +129,7 @@ export function useTmdb() {
           popularity: credit.popularity ?? 0,
           roles: role ? [role] : [],
           roleCategories: [category],
+          genre_ids: credit.genre_ids ?? [],
         });
       }
     }
@@ -188,6 +189,8 @@ export function useTmdb() {
       popularity: number,
       role: string,
       category: RoleCategory,
+      episodeCount?: number,
+      order?: number,
     ): void {
       const existing = map.get(id);
       if (existing) {
@@ -197,6 +200,9 @@ export function useTmdb() {
         if (!existing.roleCategories.includes(category)) {
           existing.roleCategories.push(category);
         }
+        if (episodeCount !== undefined && (existing.episodeCount ?? 0) < episodeCount) {
+          existing.episodeCount = episodeCount;
+        }
       } else {
         map.set(id, {
           id,
@@ -204,8 +210,10 @@ export function useTmdb() {
           profile_path: profile_path ?? null,
           known_for_department: dept,
           popularity,
+          episodeCount,
           roles: role ? [role] : [],
           roleCategories: [category],
+          order: order ?? 0,
         });
       }
     }
@@ -250,6 +258,8 @@ export function useTmdb() {
           castMember.popularity ?? 0,
           role,
           charCategory(role),
+          castMember.total_episode_count,
+          castMember.order,
         );
       }
       for (const crewMember of data.crew ?? []) {
@@ -359,5 +369,25 @@ export function useTmdb() {
     };
   }
 
-  return { searchPeople, fetchCredits, searchTitles, searchAll, fetchCast, fetchPersonById, fetchTitleById };
+  async function fetchPersonBirthday(id: number): Promise<{ birthday: string | null; deathday: string | null }> {
+    const data = await request<{ birthday: string | null; deathday: string | null }>(`/person/${id}`);
+    return { birthday: data.birthday ?? null, deathday: data.deathday ?? null };
+  }
+
+  async function fetchTvAirDates(id: number): Promise<{ lastAirDate: string; inProduction: boolean }> {
+    const data = await request<{ last_air_date: string; in_production: boolean }>(`/tv/${id}`);
+    return { lastAirDate: data.last_air_date ?? '', inProduction: data.in_production ?? false };
+  }
+
+  return {
+    searchPeople,
+    fetchCredits,
+    searchTitles,
+    searchAll,
+    fetchCast,
+    fetchPersonById,
+    fetchTitleById,
+    fetchPersonBirthday,
+    fetchTvAirDates,
+  };
 }

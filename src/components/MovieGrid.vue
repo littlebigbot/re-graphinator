@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import type { ProjectWithRoles, TmdbPerson, RegionMask } from '@/types/tmdb';
 import MovieCard from './MovieCard.vue';
+import MovieCardSkeleton from './MovieCardSkeleton.vue';
 
 defineProps<{
   items: ProjectWithRoles[];
   persons: TmdbPerson[];
   selectedMask: RegionMask;
+  /** Map item key (media_type-id) to region mask for Venn highlight on hover. */
+  itemRegionMask?: Map<string, RegionMask>;
+  isLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
   'compare-with': [item: ProjectWithRoles];
+  'region-hover': [mask: RegionMask];
 }>();
 </script>
 
@@ -19,17 +24,22 @@ const emit = defineEmits<{
       <span class="results-count">{{ items.length }} title{{ items.length === 1 ? '' : 's' }}</span>
     </div>
     <div class="scroll-area">
-      <div v-if="items.length" class="movie-grid">
+      <div v-if="isLoading" class="movie-grid">
+        <MovieCardSkeleton v-for="i in 12" :key="i" />
+      </div>
+      <div v-else-if="items.length" class="movie-grid">
         <MovieCard
           v-for="item in items"
-          :key="item.id"
+          :key="`${item.media_type}-${item.id}`"
           :item="item"
           :persons="persons"
           :selected-mask="selectedMask"
+          :region-mask="itemRegionMask?.get(`${item.media_type}-${item.id}`) ?? 0"
           @compare-with="emit('compare-with', $event)"
+          @region-hover="emit('region-hover', $event)"
         />
       </div>
-      <p v-else class="no-results">Nothing here for this combination.</p>
+      <p v-else class="no-results">No overlapping credits found for these people.</p>
     </div>
   </section>
 </template>

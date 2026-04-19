@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type {
   TmdbPerson,
@@ -14,6 +14,7 @@ import type {
 import type { HistoryEntry } from '@/composables/useHistory';
 import { PERSON_COLORS, ALL_ROLE_CATS } from '@/types/tmdb';
 import { useTheme } from '@/composables/useTheme';
+import { useToast } from '@/composables/useToast';
 import { useCredits } from '@/composables/useCredits';
 import { useTmdb } from '@/composables/useTmdb';
 import { useVennState } from '@/composables/useVennState';
@@ -24,18 +25,20 @@ import { collectRegionItems } from '@/utils/bitmask';
 import VennDiagram from '@/components/VennDiagram.vue';
 import MovieGrid from '@/components/MovieGrid.vue';
 import CastGrid from '@/components/CastGrid.vue';
+import OverlapTimeline from '@/components/OverlapTimeline.vue';
 import SearchHistory from '@/components/SearchHistory.vue';
 import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue';
 import DebugPanel from '@/components/DebugPanel.vue';
 
 useTheme();
-
+const { showError, showSuccess } = useToast();
 const route = useRoute();
 const router = useRouter();
 
 const { isLoading, getCached, fetchAll, fetchAllCast } = useCredits();
 const { savePerson: savePersonHistory, saveTitle: saveTitleHistory } = useHistory();
 const historyRef = ref<InstanceType<typeof SearchHistory> | null>(null);
+const vennDiagramRef = ref<InstanceType<typeof VennDiagram> | null>(null);
 
 const {
   slots,
@@ -103,6 +106,26 @@ const displayItems = computed<ProjectWithRoles[]>(() => {
   return filtered.sort(projectComparator(sortBy.value));
 });
 
+/** Map item key → region mask for Venn highlight on card hover. */
+const itemRegionMask = computed(() => {
+  const map = new Map<string, RegionMask>();
+  const mask = selectedMask.value > 0 ? selectedMask.value : allMask.value;
+  for (const [regionMask, items] of regions.value) {
+    if ((regionMask & mask) !== mask) {
+      continue;
+    }
+    for (const item of items as ProjectWithRoles[]) {
+      if (activeType.value !== 'all' && item.media_type !== activeType.value) {
+        continue;
+      }
+      map.set(`${item.media_type}-${item.id}`, regionMask);
+    }
+  }
+  return map;
+});
+
+const hoveredRegionMask = ref<RegionMask>(0);
+
 const displayCastItems = computed<CastMemberInRegion[]>(() => {
   if (searchMode.value !== 'title') {
     return [];
@@ -112,6 +135,35 @@ const displayCastItems = computed<CastMemberInRegion[]>(() => {
 });
 
 const { fetchPersonById, fetchTitleById } = useTmdb();
+
+const activeTab = ref<'grid' | 'timeline'>('grid');
+
+const canCompare = computed(() => slots.value.filter((s) => s !== null).length >= 2);
+
+// Page title when we have results
+watch(
+  [hasResults, activePeople, activeTitles, searchMode],
+  () => {
+    if (!hasResults.value) {
+      document.title = 'Re-GraphinatoR';
+      return;
+    }
+    const names =
+      searchMode.value === 'title' ? activeTitles.value.map((t) => t.name) : activePeople.value.map((p) => p.name);
+    document.title = names.length ? `${names.join(' × ')} — Re-GraphinatoR` : 'Re-GraphinatoR';
+  },
+  { immediate: true },
+);
+
+// Keyboard: Enter to run Compare
+function onKeydown(e: KeyboardEvent): void {
+  const target = e.target as HTMLElement;
+  const inInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA';
+  if (e.key === 'Enter' && canCompare.value && !hasResults.value && !inInput) {
+    e.preventDefault();
+    runCompare();
+  }
+}
 
 function updatePermalink(): void {
   const params = new URLSearchParams();
@@ -130,6 +182,7 @@ function updatePermalink(): void {
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', onKeydown);
   const modeParam = route.query.mode;
   const idsParam = route.query.ids;
   const mode = typeof modeParam === 'string' ? (modeParam as 'person' | 'title') : null;
@@ -168,6 +221,9 @@ onMounted(async () => {
     console.warn('Failed to restore from URL:', err);
   }
 });
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown);
+});
 
 async function runCompare(): Promise<void> {
   compactSlots();
@@ -189,8 +245,10 @@ async function runCompare(): Promise<void> {
       historyRef.value?.refresh();
     }
     updatePermalink();
+    showSuccess('Comparison complete');
   } catch (err) {
-    alert(`Error fetching data: ${err instanceof Error ? err.message : String(err)}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    showError(`Error fetching data: ${msg}`, runCompare);
   }
 }
 
@@ -232,6 +290,7 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
       await runCompare();
     }
   }
+  nextTick(() => vennDiagramRef.value?.focusSearch?.());
 }
 </script>
 
@@ -240,6 +299,8 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
 
   <main class="main">
     <VennDiagram
+      ref="vennDiagramRef"
+      :hover-highlight-mask="hoveredRegionMask"
       :slots="slots"
       :search-mode="searchMode"
       :has-results="hasResults"
@@ -253,6 +314,7 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
       :default-self-enabled="defaultSelfEnabled"
       :credits="credits"
       :cast-lists="filteredCastLists"
+      :filtered-credits="filteredCredits"
       @update:slot="(idx, val) => handleSlotUpdate(idx, val)"
       @clear-slot="removeSlotAt"
       @select="selectedMask = $event > 0 ? $event : allMask"
@@ -265,8 +327,8 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
       @clear-search="clearSearch"
     />
 
-    <template v-if="hasResults">
-      <div v-if="searchMode !== 'title'" class="grid-controls">
+    <template v-if="hasResults || (isLoading && searchMode !== 'title' && activePeople.length >= 2)">
+      <div v-if="searchMode !== 'title' && hasResults" class="grid-controls">
         <div class="controls-left">
           <button
             v-for="f in typeFilters"
@@ -277,10 +339,27 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
           >
             {{ f.label }}
           </button>
+          <select v-if="activeTab === 'grid'" v-model="sortBy" class="sort-select">
+            <option value="popularity">Popularity</option>
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="rating-desc">Highest rated</option>
+            <option value="alpha">A–Z</option>
+          </select>
           <span v-for="(p, i) in activePeople" :key="i" class="person-filter">
-            <span class="person-filter-name" :style="`color: ${PERSON_COLORS[i]}`">
+            <button
+              class="person-filter-name"
+              :class="{ 'person-filter-name--active': selectedMask === 1 << i }"
+              :style="`--chip-color: ${PERSON_COLORS[i]}`"
+              :title="
+                selectedMask === 1 << i
+                  ? `Showing ${surname(p.name)}'s exclusive credits — click to reset`
+                  : `Show only ${surname(p.name)}'s exclusive credits`
+              "
+              @click="selectedMask = selectedMask === 1 << i ? allMask : 1 << i"
+            >
               {{ surname(p.name) }}
-            </span>
+            </button>
             <RoleFilterDropdown
               :model-value="personRoleFilters[i] ?? ALL_ROLE_CATS"
               :counts="personRoleCounts[i] ?? {}"
@@ -291,29 +370,46 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
             />
           </span>
         </div>
-        <select
-          class="sort-select"
-          :value="sortBy"
-          @change="sortBy = ($event.target as HTMLSelectElement).value as SortBy"
-        >
-          <option value="popularity">Most popular</option>
-          <option value="date-desc">Newest first</option>
-          <option value="date-asc">Oldest first</option>
-          <option value="rating-desc">Highest rated</option>
-          <option value="alpha">A–Z</option>
-        </select>
+        <div class="view-tabs">
+          <button
+            type="button"
+            class="view-tab"
+            :class="{ 'view-tab--active': activeTab === 'grid' }"
+            @click="activeTab = 'grid'"
+          >
+            Overlap grid
+          </button>
+          <button
+            type="button"
+            class="view-tab"
+            :class="{ 'view-tab--active': activeTab === 'timeline' }"
+            @click="activeTab = 'timeline'"
+          >
+            Timeline
+          </button>
+        </div>
       </div>
 
       <MovieGrid
-        v-if="searchMode !== 'title'"
+        v-if="searchMode !== 'title' && activeTab === 'grid'"
         :items="displayItems"
         :persons="activePeople"
         :selected-mask="selectedMask"
+        :item-region-mask="itemRegionMask"
+        :is-loading="isLoading"
         @compare-with="startWithTitle"
+        @region-hover="hoveredRegionMask = $event"
+      />
+
+      <OverlapTimeline
+        v-if="searchMode !== 'title' && activeTab === 'timeline'"
+        :persons="activePeople"
+        :credits="filteredCredits as ProjectWithRoles[][]"
+        :regions="regions"
       />
 
       <CastGrid
-        v-else
+        v-if="searchMode === 'title'"
         :items="displayCastItems"
         :titles="slots as TmdbTitle[]"
         :selected-mask="selectedMask"
@@ -331,7 +427,7 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
 .main {
   max-width: 1160px;
   margin: 0 auto;
-  padding: 36px 32px;
+  padding: 36px 32px 90px 32px;
   width: 100%;
 }
 
@@ -351,6 +447,32 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
   flex-wrap: wrap;
 }
 
+.view-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.view-tab {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-3);
+  font-size: 0.74rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.view-tab--active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.5);
+}
+
 .person-filter {
   display: inline-flex;
   align-items: center;
@@ -360,6 +482,23 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
 .person-filter-name {
   font-size: 0.74rem;
   font-weight: 600;
+  color: var(--chip-color, var(--text-2));
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+.person-filter-name:hover {
+  background: color-mix(in srgb, var(--chip-color, var(--text-2)) 10%, transparent);
+  border-color: color-mix(in srgb, var(--chip-color, var(--text-2)) 30%, transparent);
+}
+.person-filter-name--active {
+  background: color-mix(in srgb, var(--chip-color, var(--text-2)) 15%, transparent);
+  border-color: var(--chip-color, var(--text-2));
 }
 
 .sort-select {
@@ -396,7 +535,7 @@ async function restoreSearch(entry: HistoryEntry): Promise<void> {
 
 @media (max-width: 640px) {
   .main {
-    padding: 20px 16px;
+    padding: 20px 16px 80px 16px;
   }
 }
 </style>

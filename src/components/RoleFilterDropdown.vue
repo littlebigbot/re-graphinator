@@ -60,6 +60,7 @@ function selectAll() {
         'dd-trigger--filtered': !allSelected,
         'dd-trigger--number': numberMode,
       }"
+      title="Include: acting, directing, writing, and other roles"
       @click="open = !open"
     >
       <!-- Number mode: compact (N) or (N*) trigger -->

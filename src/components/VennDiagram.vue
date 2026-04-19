@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { TmdbPerson, TmdbTitle, CastMember, Project, RegionMask, RoleCategory, SearchMode } from '@/types/tmdb';
 import { PERSON_COLORS, ALL_ROLE_CATS, EMPTY_ROLE_COUNTS } from '@/types/tmdb';
 import { VENN_LAYOUTS, slotPosition } from '@/utils/vennLayout';
@@ -7,24 +7,33 @@ import { MIN_PERSONS } from '@/composables/useVennState';
 import { useClickOutside } from '@/composables/useClickOutside';
 import PersonCards from '@/components/PersonCards.vue';
 import VennCanvas from '@/components/VennCanvas.vue';
+import NetworkGraph from '@/components/NetworkGraph.vue';
+import GenreChart from '@/components/GenreChart.vue';
 import RoleFilterDropdown from '@/components/RoleFilterDropdown.vue';
 import { IconGear, IconShare, IconCheck } from '@/components/icons';
 
-const props = defineProps<{
-  slots: (TmdbPerson | TmdbTitle | null)[];
-  searchMode: SearchMode | null;
-  hasResults: boolean;
-  isLoading: boolean;
-  regionCounts: Map<RegionMask, number>;
-  enabledMask: number;
-  selectedMask: RegionMask;
-  personRoleFilters: RoleCategory[][];
-  personRoleCounts: Array<Record<RoleCategory, number>>;
-  selfEnabled: boolean;
-  defaultSelfEnabled: boolean;
-  credits: Project[][];
-  castLists: CastMember[][];
-}>();
+const props = withDefaults(
+  defineProps<{
+    slots: (TmdbPerson | TmdbTitle | null)[];
+    searchMode: SearchMode | null;
+    hasResults: boolean;
+    isLoading: boolean;
+    regionCounts: Map<RegionMask, number>;
+    enabledMask: number;
+    selectedMask: RegionMask;
+    personRoleFilters: RoleCategory[][];
+    personRoleCounts: Array<Record<RoleCategory, number>>;
+    selfEnabled: boolean;
+    defaultSelfEnabled: boolean;
+    credits: Project[][];
+    castLists: CastMember[][];
+    /** Person-mode credits filtered by role; for Genre tab. */
+    filteredCredits: Project[][];
+    /** External hover mask (e.g. from card hover) to highlight Venn region. */
+    hoverHighlightMask?: RegionMask;
+  }>(),
+  {},
+);
 
 const emit = defineEmits<{
   'update:slot': [idx: number, val: TmdbPerson | TmdbTitle | null];
@@ -39,11 +48,22 @@ const emit = defineEmits<{
   'clear-search': [];
 }>();
 
+// ── Viz mode toggle ───────────────────────────────────────────────────────────
+const VIZ_STORAGE_KEY = 'venn-viz-mode';
+const storedViz = () =>
+  (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(VIZ_STORAGE_KEY)) as
+    | 'venn'
+    | 'network'
+    | 'genre'
+    | null;
+const vizMode = ref<'venn' | 'network' | 'genre'>(
+  storedViz() === 'venn' || storedViz() === 'network' || storedViz() === 'genre' ? storedViz()! : 'venn',
+);
+
 // ── Config dropdown ───────────────────────────────────────────────────────────
 const configOpen = ref(false);
 const configBtnRef = ref<HTMLElement | null>(null);
 const configPanelRef = ref<HTMLElement | null>(null);
-const advancedOpen = ref(false);
 
 useClickOutside([configBtnRef, configPanelRef], () => {
   configOpen.value = false;
@@ -71,7 +91,35 @@ function roleFilterStyle(i: number): Record<string, string> {
 /** Compare button is enabled once at least 2 slots are filled. */
 const canCompare = computed(() => props.slots.filter((slot) => slot !== null).length >= MIN_PERSONS);
 
+const filledCount = computed(() => props.slots.filter((slot) => slot !== null).length);
+const compareSub = computed(() => {
+  if (props.isLoading) {
+    return 'do not interfere';
+  }
+  if (filledCount.value === 1) {
+    return props.searchMode === 'title' ? 'Add 1 more title to compare' : 'Add 1 more person to compare';
+  }
+  if (filledCount.value === 0) {
+    return 'Add 2+ people or titles above';
+  }
+  return 'the subjects await';
+});
+
 const emptyRoleCounts = EMPTY_ROLE_COUNTS;
+const personCardsRef = ref<InstanceType<typeof PersonCards> | null>(null);
+
+function focusSearch(): void {
+  personCardsRef.value?.focusSearch?.();
+}
+
+defineExpose({ focusSearch });
+
+// Persist viz tab on change
+watch(vizMode, (v) => {
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(VIZ_STORAGE_KEY, v);
+  }
+});
 
 // ── Share button ──────────────────────────────────────────────────────────────
 const shareDone = ref(false);
@@ -92,6 +140,12 @@ async function handleShare(): Promise<void> {
     }, 2000);
   }
 }
+
+/** Names and credits for Genre tab (person mode only). */
+const genreNames = computed(() =>
+  props.slots.filter((slot): slot is TmdbPerson | TmdbTitle => slot !== null).map((slot) => slot.name),
+);
+const creditsForGenre = computed(() => (props.searchMode === 'person' ? props.filteredCredits : []));
 
 /** Inclusive credit total for slot i across all visible regions. */
 function totalForSlot(i: number): number {
@@ -116,6 +170,32 @@ function totalForSlot(i: number): number {
           <span class="logo-text"> <span class="big-r">R</span>e-Graphinato<span class="big-r">R</span> </span>
           <span class="logo-sub">Filmography Overlap System</span>
         </div>
+
+        <!-- ── Viz mode toggle ── -->
+        <!-- <div class="viz-tabs">
+          <button
+            type="button"
+            class="viz-tab"
+            :class="{ 'viz-tab--active': vizMode === 'venn' }"
+            title="Overlap of filmographies"
+            @click="vizMode = 'venn'"
+          >Venn</button>
+          <button
+            type="button"
+            class="viz-tab"
+            :class="{ 'viz-tab--active': vizMode === 'network' }"
+            title="Connections between subjects"
+            @click="vizMode = 'network'"
+          >Network</button>
+          <button
+            type="button"
+            class="viz-tab"
+            :class="{ 'viz-tab--active': vizMode === 'genre', 'viz-tab--disabled': searchMode === 'title' }"
+            :title="searchMode === 'title' ? 'Genre fingerprint is only available when comparing people' : 'Genre radar chart'"
+            :disabled="searchMode === 'title'"
+            @click="searchMode !== 'title' && (vizMode = 'genre')"
+          >Genre</button>
+        </div> -->
 
         <!-- ── Config button + dropdown ── -->
         <div class="config-wrap">
@@ -145,25 +225,6 @@ function totalForSlot(i: number): number {
                   <span class="config-toggle-knob" />
                 </button>
               </label>
-
-              <button
-                class="config-advanced-toggle"
-                type="button"
-                aria-label="Toggle advanced settings"
-                :aria-expanded="advancedOpen"
-                @click="advancedOpen = !advancedOpen"
-              >
-                <span class="config-advanced-label">Advanced options</span>
-                <span class="config-advanced-chevron" :class="{ 'config-advanced-chevron--open': advancedOpen }">
-                  ▾
-                </span>
-              </button>
-
-              <Transition name="config-advanced">
-                <div v-if="advancedOpen" class="config-advanced-panel">
-                  <p class="config-advanced-hint">Tweak expert settings here as more options are added.</p>
-                </div>
-              </Transition>
             </div>
           </Transition>
         </div>
@@ -171,6 +232,7 @@ function totalForSlot(i: number): number {
 
       <!-- ── Person/title search cards ── -->
       <PersonCards
+        ref="personCardsRef"
         :slots="slots"
         :search-mode="searchMode"
         :has-results="hasResults"
@@ -184,61 +246,79 @@ function totalForSlot(i: number): number {
       />
     </header>
 
-    <!-- ── D3 SVG canvas + compare overlay + per-name overlays ── -->
-    <div class="canvas-wrap" :style="`aspect-ratio: ${stageLayout.W} / ${stageLayout.H}`">
-      <VennCanvas
-        :slots="slots"
-        :has-results="hasResults"
-        :is-loading="isLoading"
-        :region-counts="regionCounts"
-        :enabled-mask="enabledMask"
-        :selected-mask="selectedMask"
-        @select="emit('select', $event)"
-      />
+    <!-- ── Viz area: Venn | Network | Genre ── -->
+    <div class="viz-container">
+      <div v-if="vizMode === 'genre'" class="genre-viz-wrap">
+        <GenreChart :credits="creditsForGenre" :names="genreNames" />
+      </div>
+      <div v-else class="canvas-wrap" :style="`aspect-ratio: ${stageLayout.W} / ${stageLayout.H}`">
+        <VennCanvas
+          v-if="vizMode === 'venn'"
+          :slots="slots"
+          :has-results="hasResults"
+          :is-loading="isLoading"
+          :region-counts="regionCounts"
+          :enabled-mask="enabledMask"
+          :selected-mask="selectedMask"
+          :external-hover-mask="hoverHighlightMask ?? 0"
+          @select="emit('select', $event)"
+        />
+        <NetworkGraph
+          v-else
+          :slots="slots"
+          :has-results="hasResults"
+          :region-counts="regionCounts"
+          :enabled-mask="enabledMask"
+          :selected-mask="selectedMask"
+          @select="emit('select', $event)"
+        />
+
+        <!-- ── Role filter dropdowns — post-compare, person mode, venn only ── -->
+        <template v-if="hasResults && searchMode === 'person' && vizMode === 'venn'">
+          <template v-for="(slot, i) in slots" :key="i">
+            <div v-if="slot !== null" :style="roleFilterStyle(i)">
+              <RoleFilterDropdown
+                :model-value="personRoleFilters[i] ?? ALL_ROLE_CATS"
+                :counts="personRoleCounts[i] ?? emptyRoleCounts"
+                :color="PERSON_COLORS[i]"
+                :number-mode="true"
+                :total-count="totalForSlot(i)"
+                @update:model-value="emit('update-role-filter', i, $event)"
+              />
+            </div>
+          </template>
+        </template>
+      </div>
 
       <Transition name="compare-fade">
         <button
           v-if="!hasResults"
           class="compare-overlay"
-          :class="{ 'compare-overlay--loading': isLoading }"
+          :class="{
+            'compare-overlay--loading': isLoading,
+            'compare-overlay--disabled': !canCompare && !isLoading,
+          }"
           :disabled="!canCompare || isLoading"
+          :aria-label="isLoading ? 'Analyzing comparison' : 'Run comparison'"
           @click="emit('run-compare')"
         >
           <span class="compare-label">{{ isLoading ? 'Analyzing…' : 'Compare' }}</span>
-          <span class="compare-sub">{{ isLoading ? 'do not interfere' : 'the subjects await' }}</span>
+          <span class="compare-sub">{{ compareSub }}</span>
         </button>
       </Transition>
 
-      <!-- ── Hover-remove zones — one per filled slot, centred on its name label ── -->
-      <!-- <template v-for="(slot, i) in slots" :key="`lhz-${i}`">
-        <div v-if="slot !== null" class="label-hover-zone" :style="labelOverlayStyle(i)">
-          <button class="label-remove-btn" title="Remove" @click="emit('clear-slot', i)">✕</button>
-        </div>
-      </template> -->
-
-      <!-- ── Share button ── -->
       <Transition name="compare-fade">
-        <button v-if="hasResults" class="share-btn" :class="{ 'share-btn--done': shareDone }" @click="handleShare">
+        <button
+          v-if="hasResults"
+          class="share-btn"
+          :class="{ 'share-btn--done': shareDone }"
+          :aria-label="shareDone ? 'Link copied' : 'Share comparison'"
+          @click="handleShare"
+        >
           <IconCheck v-if="shareDone" :width="14" :height="14" />
           <IconShare v-else :width="14" :height="14" />
         </button>
       </Transition>
-
-      <!-- ── Role filter dropdowns — post-compare, person mode only ── -->
-      <template v-if="hasResults && searchMode === 'person'">
-        <template v-for="(slot, i) in slots" :key="i">
-          <div v-if="slot !== null" :style="roleFilterStyle(i)">
-            <RoleFilterDropdown
-              :model-value="personRoleFilters[i] ?? ALL_ROLE_CATS"
-              :counts="personRoleCounts[i] ?? emptyRoleCounts"
-              :color="PERSON_COLORS[i]"
-              :number-mode="true"
-              :total-count="totalForSlot(i)"
-              @update:model-value="emit('update-role-filter', i, $event)"
-            />
-          </div>
-        </template>
-      </template>
     </div>
   </div>
 </template>
@@ -248,8 +328,8 @@ function totalForSlot(i: number): number {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 20px 24px 16px;
-  margin-bottom: 28px;
+  padding: 20px 24px 12px;
+  margin-bottom: 16px;
   box-shadow: inset 0 0 60px rgba(var(--accent-rgb), 0.02);
 }
 
@@ -258,6 +338,7 @@ function totalForSlot(i: number): number {
   align-items: flex-start;
   justify-content: space-between;
   padding-bottom: 11px;
+  gap: 12px;
 }
 
 .logo {
@@ -288,6 +369,47 @@ function totalForSlot(i: number): number {
   font-size: 0.72rem;
   letter-spacing: 0.01em;
   align-self: center;
+}
+
+/* ── Viz mode tabs ── */
+.viz-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: center;
+}
+
+.viz-tab {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-3);
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.viz-tab:hover {
+  color: var(--text-2);
+}
+
+.viz-tab--active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.5);
+}
+
+.viz-tab--disabled {
+  opacity: 0.5;
+  color: var(--text-3);
+  background: var(--surface3);
+  border-color: var(--border);
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* ── Config button ── */
@@ -361,44 +483,6 @@ function totalForSlot(i: number): number {
   user-select: none;
 }
 
-.config-advanced-toggle {
-  width: 100%;
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 14px 4px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  color: var(--text-3);
-}
-
-.config-advanced-label {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-}
-
-.config-advanced-chevron {
-  transition: transform 0.12s ease;
-}
-
-.config-advanced-chevron--open {
-  transform: rotate(180deg);
-}
-
-.config-advanced-panel {
-  padding: 4px 14px 8px;
-  border-top: 1px solid var(--border);
-}
-
-.config-advanced-hint {
-  font-size: 0.72rem;
-  color: var(--text-3);
-  margin: 4px 0 2px;
-}
-
 /* pill toggle */
 .config-toggle {
   flex-shrink: 0;
@@ -446,20 +530,19 @@ function totalForSlot(i: number): number {
   transform: translateY(-4px);
 }
 
-.config-advanced-enter-active,
-.config-advanced-leave-active {
-  transition:
-    opacity 0.12s ease,
-    transform 0.12s ease;
+/* ── Viz container ── */
+.viz-container {
+  position: relative;
+  min-height: 220px;
+}
+.genre-viz-wrap {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
-.config-advanced-enter-from,
-.config-advanced-leave-to {
-  opacity: 0;
-  transform: translateY(-3px);
-}
-
-/* ── Canvas overlay wrapper ── */
 .canvas-wrap {
   position: relative;
 }
@@ -567,7 +650,8 @@ function totalForSlot(i: number): number {
   animation: compare-flicker 2.4s ease-in-out infinite;
 }
 
-.compare-overlay:disabled {
+.compare-overlay:disabled,
+.compare-overlay--disabled {
   opacity: 0.18;
   cursor: not-allowed;
   animation: none;
@@ -671,6 +755,8 @@ function totalForSlot(i: number): number {
 }
 .share-btn--done {
   color: var(--accent);
-  border-color: rgba(var(--accent-rgb), 0.4);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface2));
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.25);
 }
 </style>

@@ -135,7 +135,26 @@ input {
   border-radius: 2px;
 }
 
-/* ── Spinner ──────────────────────────────────────────────────────────────── */
+/* ── Mobile tap targets (min ~44px for touch) ────────────────────────────────── */
+@media (pointer: coarse) {
+  button:not(.chip-clear) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Spinner ────────────────────────────────────────────────────────────── */
 .spinner {
   display: inline-block;
   width: 30px;

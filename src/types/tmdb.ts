@@ -72,7 +72,9 @@ export interface TmdbTvCastRaw {
   profile_path: string | null;
   department?: string;
   popularity?: number;
+  total_episode_count?: number;
   roles?: Array<{ character: string }>;
+  order: number;
 }
 
 /** Crew entry from /tv/{id}/aggregate_credits. */
@@ -105,6 +107,7 @@ export interface TmdbCombinedCredit {
   job?: string;
   department?: string;
   overview?: string;
+  genre_ids?: number[];
 }
 
 /**
@@ -128,8 +131,10 @@ export interface CastMember {
   profile_path: string | null;
   known_for_department?: string;
   popularity: number;
+  episodeCount?: number;
   roles: string[];
   roleCategories: RoleCategory[];
+  order: number;
 }
 
 /** CastMember enriched with per-slot role data (parallel to ProjectWithRoles). */
@@ -178,6 +183,7 @@ export interface Project {
   popularity: number;
   roles: string[];
   roleCategories: RoleCategory[];
+  genre_ids?: number[];
 }
 
 /**
